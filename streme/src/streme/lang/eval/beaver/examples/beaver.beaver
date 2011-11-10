@@ -1,0 +1,290 @@
+; ======================================================================= ;
+;                                                                         ;
+;  Beaver in 500 lines - Joeri De Koster, Theo D'Hondt: SOFT: VUB - 2011  ;
+;                                                                         ;
+; ======================================================================= ;
+
+;
+; round robin scheduler with workers
+;
+
+(define *first-task* '())
+(define *last-task* '())
+(define *global-semaphore* (make-semaphore 1))
+(define *queue-size* (make-semaphore 0))
+
+(define (enqueue process)
+  (if (null? *last-task*)
+      (begin
+        (set! *last-task* (list process))
+        (set! *first-task* *last-task*))
+      (begin
+        (set-cdr! *last-task* (list process))
+        (set! *last-task* (cdr *last-task*)))))
+
+(define (dequeue)
+  (if (not (null? *first-task*))
+      (let ((process (car *first-task*)))
+        (set! *first-task* (cdr *first-task*))
+        (if (null? *first-task*)
+            (set! *last-task* '()))
+        process)
+      #f))
+
+(define (protected-enqueue process)
+  (semaphore-wait *global-semaphore*)
+  (enqueue process)
+  (semaphore-post *queue-size*)
+  (semaphore-post *global-semaphore*))
+
+(define (protected-dequeue)
+  (semaphore-wait *global-semaphore*)
+  (let ((process (dequeue)))
+    (semaphore-post *global-semaphore*)
+    (if process
+      process
+      (begin
+        (semaphore-wait *queue-size*)
+        (protected-dequeue)))))
+
+(define-macro (schedule expression)
+  `(begin (protected-enqueue (lambda () ,expression))))
+
+(define (worker-loop)
+  (define process (protected-dequeue))
+  (if process
+      (process))
+  (worker-loop))
+
+(define (spawn-worker)
+  (thread (lambda () (worker-loop))))
+
+;
+; globals and meta-functions
+;
+
+(define meta-level-eval eval)
+(define global-environment '())
+
+;
+; natives
+;
+
+(define (wrap-native-procedure native-procedure)
+  (lambda (arguments continue)
+    (define (continue-after-force forced-arguments)
+      (define native-value (apply native-procedure forced-arguments))
+      (schedule (continue native-value)))
+    (force-list arguments continue-after-force)))
+
+;
+; environment
+;
+
+(define (lookup variable environment)
+  (if (null? environment)
+      #f
+      (let* ((first-frame (car environment))
+             (binding (assoc variable first-frame)))
+        (if binding
+            (cdr binding)
+            (lookup variable (cdr environment))))))
+
+(define (replace variable value environment)
+  (if (null? environment)
+      #f
+      (let* ((first-frame (car environment))
+             (binding (assoc variable first-frame)))
+        (if binding
+            (begin (set-cdr! binding value) #t)
+            (replace variable value (cdr environment))))))
+
+(define (extend-environment variable value environment)
+  (set-car! environment (cons (cons variable value) (car environment))))
+
+;
+; Futures
+;
+
+(define (make-future)
+  (vector 'future 'unspecified))
+
+(define (future? value)
+  (and (vector? value) (eq? (vector-ref value 0) 'future)))
+
+(define (resolve future value)
+  (vector-set! future 1 value))
+
+(define (resolved? future)
+  (not (eq? (vector-ref future 1) 'unspecified)))
+
+(define (future-value future)
+  (vector-ref future 1))
+
+(define (force-future value continue)
+  (if (future? value)
+      (if (resolved? value)
+          (schedule (continue (future-value value)))
+          (schedule (force-future value continue)))
+      (schedule (continue value))))
+
+(define (force-list list continue)
+  (define (force-iter list forced-list)
+    (define (continue-with-list value)
+      (force-iter (cdr list) (cons value forced-list)))
+    (if (null? list)
+        (schedule (continue (reverse forced-list)))
+        (force-future (car list) continue-with-list)))
+  (force-iter list '()))
+
+;
+; functions
+;
+
+(define (bind-parameters parameters arguments environment)
+  (if (symbol? parameters)
+      (extend-environment parameters arguments environment)
+      (if (pair? parameters)
+          (let ((variable (car parameters))
+                (value (car arguments)))
+            (extend-environment variable value environment)
+            (bind-parameters (cdr parameters) (cdr arguments) environment)))))
+
+(define (evaluate-sequence expressions continue environment)
+  (define head (car expressions))
+  (define tail (cdr expressions))
+  (define (continue-with-sequence value)
+    (evaluate-sequence tail continue environment))
+  (if (null? tail)
+      (evaluate head continue environment)
+      (evaluate head continue-with-sequence environment)))
+
+(define (make-procedure parameters expressions environment)
+  (lambda (arguments continue)
+    (define lexical-environment (cons '() environment))
+    (bind-parameters parameters arguments lexical-environment)
+    (evaluate-sequence expressions continue lexical-environment)))
+
+(define (evaluate-apply operator operands future environment)
+  (define (continue-after-operator procedure)
+    (define (evaluate-operands operands arguments)
+      (define (continue-with-operands value)
+        (evaluate-operands (cdr operands) (cons value arguments)))
+      (define (continue-after-procedure value)
+        (define (continue-after-force value)
+          (resolve future value))
+        (force-future value continue-after-force))
+      (if (null? operands)
+          (procedure (reverse arguments) continue-after-procedure)
+          (evaluate (car operands) continue-with-operands environment)))
+    (evaluate-operands operands '()))
+  (evaluate operator continue-after-operator environment))
+
+;
+; evaluation functions
+;
+
+(define (evaluate-application operator)
+  (lambda operands
+    (lambda (continue environment)
+      (define future (make-future))
+      (schedule (evaluate-apply operator operands future environment))
+      (schedule (continue future)))))
+
+(define (evaluate-begin . expressions)
+  (lambda (continue environment)
+    (evaluate-sequence expressions continue environment)))
+
+(define (evaluate-define pattern . expressions)
+  (lambda (continue environment)
+    (define (continue-after-expression value)
+      (extend-environment pattern value environment)
+      (schedule (continue value)))
+    (if (symbol? pattern)
+        (evaluate (car expressions) continue-after-expression environment)
+        (let ((name (car pattern))
+              (procedure (make-procedure (cdr pattern) expressions environment)))
+          (extend-environment name procedure environment)
+          (schedule (continue procedure))))))
+
+(define (evaluate-if predicate consequent . alternative)
+  (lambda (continue environment)
+    (define (continue-after-force boolean)
+      (if (eq? boolean #f) 
+          (if (null? alternative)
+              (schedule (continue '()))
+              (evaluate (car alternative) continue environment))
+          (evaluate consequent continue environment)))
+    (define (continue-after-predicate value)
+      (force-future value continue-after-force))
+    (evaluate predicate continue-after-predicate environment)))
+
+(define (evaluate-lambda parameters . expressions)
+  (lambda (continue environment)
+    (schedule (continue (make-procedure parameters expressions environment)))))
+
+(define (evaluate-quote expression)
+  (lambda (continue environment)
+    (schedule (continue expression environment))))
+
+(define (evaluate-set! variable expression)
+  (lambda (continue environment)
+    (define (continue-after-expression value)
+      (define success (replace variable value environment))
+      (if (not success)
+          (error "inaccessible variable: " variable))
+      (schedule (continue value)))
+    (evaluate expression continue-after-expression environment)))
+
+(define (evaluate-variable variable continue environment)
+  (define value (lookup variable environment))
+  (if value
+      (schedule (continue value))
+      (let ((native-value (meta-level-eval variable)))
+        (if (procedure? native-value)
+            (schedule (continue (wrap-native-procedure native-value)))
+            (schedule (continue native-value))))))
+
+;
+; evaluator
+;
+
+(define (evaluate expression continue environment)
+  (cond
+    ((symbol? expression)
+     (evaluate-variable expression continue environment))
+    ((pair? expression)
+     (let ((operator (car expression))
+           (operands (cdr expression)))
+       ((apply
+         (case operator
+           ((begin)  evaluate-begin )
+           ((define) evaluate-define)
+           ((if)     evaluate-if    )
+           ((lambda) evaluate-lambda)
+           ((quote)  evaluate-quote ) 
+           ((set!)   evaluate-set!  )
+           (else     (evaluate-application operator))) operands) continue environment)))
+    (else
+     (schedule (continue expression)))))
+
+;
+; read-eval-print
+;
+
+(define (loop output)
+  (define (continue-after-eval value)
+    (force-future value loop))
+  (display output)
+  (newline)
+  (display ">>>")
+  (evaluate (read) continue-after-eval global-environment))
+
+(set! global-environment (cons '() '()))
+
+(schedule (loop "Beaver version 0.2"))
+
+(spawn-worker)
+(spawn-worker)
+(spawn-worker)
+(worker-loop)

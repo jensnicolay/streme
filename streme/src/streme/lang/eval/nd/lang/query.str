@@ -1,0 +1,204 @@
+;; NARROWING
+
+(define-pattern (in ?ast . ?query)
+  (let ((*ast* ?ast))
+    @?query))
+        
+;; TRAVERSE DOWN        
+
+(define (children-of n)
+  (.children n))
+
+(define (a-child-of n)
+	(an-element-of (children-of n)))
+
+(define (a-descendant-of n)
+	(let ((cn (a-child-of n)))
+		(amb cn (a-descendant-of cn))))
+
+;; TRAVERSE UP (PARENT)
+
+(define (parent-analysis)
+	(.getParentAnalysis *analysis*))	
+	
+(define (parent-of n)
+	(unbound->false (.getParent (parent-analysis) n)))	
+		
+(define (an-ancestor-of n)
+	(let ((pn (parent-of n)))
+		(amb pn (an-ancestor-of pn))))	
+
+;; CREATING
+
+; create-xxx primitives in Java (convert into Streme)
+
+(define (create-from-children n c)
+  (.fromChildren n c))
+
+;; SELECTING
+
+(define (a-node-in ast)
+  (amb ast (a-descendant-of ast)))
+
+(define (a-node)
+	(a-node-in *ast*))
+
+(define (a-var-in ast)
+	(let ((n (a-node-in ast))) (require (var? n)) n))
+	
+(define (a-var)
+	(a-var-in *ast*))
+
+(define (a-var-with-name-in name ast)
+	(let ((var (a-var-in ast))) (require (name-equal? (var-name var) name)) var))
+
+(define (a-var-with-name name)
+	(a-var-with-name-in name *ast*))
+	
+(define (binding-var? var)
+	(binding? (parent-of var)))
+	
+(define (defined-var? var)
+	(define? (parent-of var)))
+	
+(define (set-var? var)
+	(set? (parent-of var))) 
+		
+(define (lambda-var? var)
+	(lambda? (parent-of var)))
+		
+(define (a-ref-in ast)
+	(let ((n (a-node-in ast))) (require (ref? n)) n))
+	
+(define (a-ref)
+	(a-ref-in *ast*))
+
+(define (a-ref-with-name-in name ast)
+	(let ((ref (a-ref-in ast))) (require (name-equal? (ref-name ref) name)) ref))
+
+(define (a-ref-with-name name)
+	(a-ref-with-name-in name *ast*))
+	
+(define (a-binding-in ast)
+	(let ((n (a-node-in ast))) (require (binding? n)) n))
+	
+(define (a-binding)
+	(a-binding-in *ast*))
+
+(define (a-binding-for-name-in name ast)
+	(let* ((binding (a-binding-in ast))
+		   (var (binding-var binding)))
+	  (require (name-equal? (var-name var) name))
+	  binding))
+
+(define (a-binding-for-name name)
+	(a-binding-for-name-in name *ast*))
+	
+(define (an-application-in ast)
+	(let ((n (a-node-in ast))) (require (application? n)) n))
+	
+(define (an-application)
+	(an-application-in *ast*))
+		
+(define (an-application-with-operator-in operator ast)
+  (let ((application (an-application-in ast)))
+    (require (eq? (application-operator application) operator))
+    application))		
+		
+(define (an-application-with-operator operator)
+	(let ((parent (parent-of operator)))
+		(require (application? parent))
+		(require (eq? (application-operator parent) operator))
+		parent))
+		
+(define (a-lambda-in ast)
+	(let ((n (a-node-in ast))) (require (lambda? n)) n))
+	
+(define (a-lambda)
+	(a-lambda-in *ast*))
+		
+;; VAR POINTER
+(define (var-pointer-analysis)
+	(.getVarPointerAnalysis *analysis*))
+
+(define (var-read ref)
+	(unbound->false (.getVarRead (var-pointer-analysis) ref)))
+	
+(define (var-written setvar)
+	(unbound->false (.getVarWritten (var-pointer-analysis) setvar)))
+	
+(define (a-read-ref var)
+	(an-element-of (.getReadRefs (var-pointer-analysis) var)))
+
+(define (a-write-ref var)
+	(an-element-of (.getWriteRefs (var-pointer-analysis) var)))
+		
+(define (a-read-or-write-ref var) ; a-ref already exists
+  (amb (a-read-ref var) (a-write-ref var)))
+
+(define (vars-in-scope n)
+  (.inScope (var-pointer-analysis) n))
+
+(define (a-var-in-scope n)
+  (an-element-of (vars-in-scope n)))
+  
+(define (var-in-scope? var n)
+  (exists?
+    (let ((var-in-scope (a-var-in-scope n)))
+      (require (eq? var-in-scope var)))))
+
+(define (names-in-scope n)
+  (map var-name (vars-in-scope n)))
+
+(define (a-name-in-scope n)
+  (var-name (a-var-in-scope n)))
+  
+(define (name-in-scope? name n)
+  (exists?
+    (let ((name-in-scope (a-name-in-scope n)))
+      (require (eq? name-in-scope name)))))
+
+;; IPDA
+(define (ipd-analysis)
+	(.getIpdAnalysis *analysis*))
+
+(define (ipd-reads app)
+	(an-element-of (.getReads (ipd-analysis) app)))
+
+(define (ipd-writes app)
+	(an-element-of (.getWrites (ipd-analysis) app)))
+	
+(define (ipd-values var)
+	(an-element-of (.getValues (ipd-analysis) var)))
+	
+(define (ipd-mono-values var)
+	(an-element-of (.getMonoValues (ipd-analysis) var)))
+	
+(define (ipd-result)
+	(.getResult (ipd-analysis)))
+
+	
+;;; DEPENDENCIES
+(define (dependence-analyzer)
+	(.getDependenceAnalyzer *analysis*))
+	
+(define (dependencies n1 n2)
+	(.computeDependencies (dependence-analyzer) n1 n2))
+	
+(define (a-dependency-between n1 n2)
+	(an-element-of (dependencies n1 n2)))
+	
+(define (dependent? e1 e2)
+	(exists? (a-dependency-between e1 e2)))
+	
+(define (independent? . exps)
+	(not (exists?
+			(let ((e1 (an-element-of exps))
+		          (e2 (an-element-of exps)))
+	           (require (not (eq? e1 e2)))
+	           (require (dependent? e1 e2))))))
+	           	           
+	           
+;; ALIASES
+
+

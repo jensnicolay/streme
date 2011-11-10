@@ -1,0 +1,50 @@
+(define (fact n)
+	(if (zero? n)
+		1 
+		(* n (fact (- n 1)))))
+		
+(define (Ifact n)
+	(if (Izero? n)
+		1I 
+		(I* n (Ifact (I- n 1I)))))
+
+(define (fact2 n)
+    (fact-iter n 1))
+
+(define (fact-iter i acc)
+  (if (zero? i)
+      acc
+      (fact-iter (- i 1) (* acc i))))
+    
+    
+(define (do-mult x y)
+	(if (< x y)
+		1
+		(* x (do-mult (- x 1) y))))
+		
+		
+(define fib (lambda (n)
+  (if (< n 2)
+      n
+      (+ (fib (- n 1)) (fib (- n 2))))))
+      
+(define Ifib (lambda (n)
+  (if (< n 2I)
+      n
+      (I+ (Ifib (I- n 1I)) (Ifib (I- n 2I))))))
+		
+		
+; v0.1 -- s-expression interpreter, int/rat/dec math
+; 2 (time (fact 10000)) 	6156
+; 2 (time (fact 10000)) 	1719 -- method caching
+; 2 (time (fact 10000)) 	1469 [1300]
+; 2 (time (fib 25)) 				14250
+
+; v0.2 -- Expression interpreter, only BigInteger math
+; 2 (time (fact 10000)) 	1062 [625]
+; 2 (time (fib 25)) 			7953 [8900]
+; 2 (time (fact 10000)) [500]  -- wrap everything in Expression
+; 1 (time (fact 10000)) [400] -- quicker with one thread!!!
+; 1 (time (fact 10000)) 891 [616] -- added 012N: slower???
+; 1 (time (fib 25)) 3188 [2751]
+; 1 (time (fact 10000)) 875 [484] -- lexical vars

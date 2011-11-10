@@ -1,0 +1,71 @@
+(define (fib1 n)
+  (if (< n 2)
+      n
+      (let
+      	((a (fib1 (- n 1)))
+      	 (b (fib1 (- n 2))))
+       (+ a b))))  
+
+(define (fib2 n)
+  (if (< n 2)
+      n
+      (let||
+      	((a (fib2 (- n 1)))
+      	 (b (fib2 (- n 2))))
+       (+ a b))))  
+
+
+(letrec ((sum (lambda (ls)
+                (if (null? ls)
+                    0
+                    (+ (car ls) (sum (cdr ls)))))))
+  (sum '(1 2 3 4 5)))
+
+(letrec ((even?
+          (lambda (x)
+            (or (= x 0)
+                (odd? (- x 1)))))
+         (odd?
+          (lambda (x)
+            (and (not (= x 0))
+                 (even? (- x 1))))))
+  (list (even? 20) (odd? 20)))
+  
+(define (test1)
+	(let ((x 0))
+		(set! x 1)
+		(set! x 2)
+		(set! x 3)
+		x))
+		
+(define (test2)
+	(let ((x 0) (y 0))
+		(set! x 1)
+		(set! x 2)
+		(set! x 3)
+		(set! y 5)
+		(set! y 6)
+		(set! y 7)
+		(list x y)))
+		
+(letrec
+	((f (lambda (x k)
+			(if (zero? x)
+				(k 1)
+				(f (- x 1) (lambda (v) (k (* x v))))))))
+	(f 5 (lambda (x) x)))
+		 
+	
+(define (find-lefmost predicate? tree fail)
+	(if (leaf? tree)
+		(if (predicate? tree)
+			tree
+			(fail))
+	(let ((continuation
+			(lambda ()
+				(find-lefmost predicate? (right-child tree) fail))))
+		(find-leftmost predicate? (left-child tree) continuation))))
+		
+(define t (lambda (f . r) (display f) (newline) (display r)))
+  
+*test*

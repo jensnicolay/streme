@@ -1,0 +1,13 @@
+(define (put-all-properties target source)
+	(.putAllProperties target source)
+	target)
+
+(define (rewrite node strategy)
+  (let ((rewritten (strategy node)))
+    (if rewritten
+        (put-all-properties rewritten node)
+        (let ((cs (children-of node)))
+          (let ((ncs (map (lambda (c) (rewrite c strategy)) cs)))
+            (if (eqv? cs ncs)
+                node
+                (put-all-properties (create-from-children node ncs) node)))))))

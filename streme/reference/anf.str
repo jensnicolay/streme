@@ -1,0 +1,78 @@
+;;; Translating from CoreScheme to A Normal Form
+
+(define (value? M) 
+  (or (number? M) (symbol? M) (abstraction? M)))
+
+(define (abstraction? M)
+  (and (pair? M) (eq? (car M) 'lambda)))
+
+; PLT Scheme
+(define (primitive-symbol? op)
+  (memv op '(+ - * /)))
+; PLT Scheme
+
+
+;; Example
+; > (normalize-term '(+ (+ 2 2) (let (x 1) (- x))))
+;  (let (t1 (+ 2 2))
+;    (let (x 1)
+;      (let (t2 (- x))
+;        (+ t1 t2))))
+
+
+(define (normalize-term M)
+  (normalize M (lambda (x) x)))
+
+(define (normalize M k)
+  (if (pair? M)
+      (let
+          ((c (car M)))
+        (case c
+          ((lambda)
+           (let
+               ((params (cadr M))
+                (body (cddr M)))
+             (k (list 'lambda params (normalize-term body)))))
+          ((let)
+           (let
+               ((x (caadr M))
+                (M1 (cadadr M))
+                (M2 (caddr M)))
+             (normalize M1 (lambda (N1) (list (list 'let (list x N1)) (normalize M2 k))))))
+          ((if)
+           (let
+               ((M1 (cadr M))
+                (M2 (caddr M))
+                (M3 (cadddr M)))
+             (normalize-name M1 (lambda (t) (k (list 'if t (normalize-term M2) (normalize-term M3)))))))
+          (else
+           (let
+               ((M* (cdr M)))
+             (if (primitive? c)
+                 (normalize-name* M* (lambda (t*) (k (cons c t*))))
+                 (normalize-name c (lambda (t) (normalize-name* M* (lambda (t*) (k (cons t t*)))))))))))
+      (k M)))
+            
+(define (normalize-name M k)
+  (normalize M
+             (lambda (N) 
+               (if (value? N)
+                   (k N)
+                   (let ((t (new-var)))
+                     (list 'let (list (list t N))
+                        (k t)))))))
+
+(define (normalize-name* M* k)
+  (if (null? M*)
+      (k '())
+      (normalize-name (car M*)
+                      (lambda (t)
+                        (normalize-name* (cdr M*)
+                                         (lambda (t*)
+                                           (k (cons t t*))))))))
+
+(define new-var 
+  (let ((count 0))
+    (lambda ()
+      (set! count (+ 1 count))
+      (string->symbol (string-append "t" (number->string count))))))

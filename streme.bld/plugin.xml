@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         id="stremeBuilder"
+         name="Streme Project Builder"
+         point="org.eclipse.core.resources.builders">
+      <builder
+            hasNature="true">
+         <run
+               class="streme.bld.builder.StremeBuilder">
+         </run>
+      </builder>
+   </extension>
+   <extension
+         id="stremeNature"
+         name="Streme Project Nature"
+         point="org.eclipse.core.resources.natures">
+      <runtime>
+         <run
+               class="streme.bld.builder.StremeNature">
+         </run>
+      </runtime>
+      <builder
+            id="streme.bld.stremeBuilder">
+      </builder>
+   </extension>
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            adaptable="true"
+            objectClass="org.eclipse.core.resources.IProject"
+            nameFilter="*"
+            id="streme.bld.contribution1">
+         <action
+               label="Add/Remove Sample Nature"
+               class="streme.bld.builder.ToggleNatureAction"
+               menubarPath="additions"
+               enablesFor="+"
+               id="streme.bld.addRemoveNatureAction">
+         </action>
+      </objectContribution>
+   </extension>
+   <extension
+         id="xmlProblem"
+         name="XML Problem"
+         point="org.eclipse.core.resources.markers">
+      <super type="org.eclipse.core.resources.problemmarker"/>
+      <super type="org.eclipse.core.resources.textmarker"/>
+      <persistent
+            value="true">
+      </persistent>
+   </extension>
+   <extension point = "org.eclipse.debug.core.launchConfigurationTypes">
+   	<launchConfigurationType
+   	   id="streme.launching.localStremeApplication"
+	   name="Streme application"
+	   delegate="streme.bld.launching.StremeLaunchDelegate"
+	   modes= "run"/>
+   </extension>
+   <extension point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+            label="Streme application"
+            modes="run"
+            class="streme.bld.launching.StremeLaunchShortcut"
+            id="streme.bld.launching.StremeShortcut">
+         <contextualLaunch>
+           <enablement>
+             <with variable="selection">
+               <count value="1"/>
+               <iterate>
+                 <test property="org.eclipse.debug.ui.matchesPattern" value="*.str"/>
+               </iterate>
+             </with>
+           </enablement>
+  		 </contextualLaunch>
+      </shortcut>  
+    </extension>
+   
+</plugin>

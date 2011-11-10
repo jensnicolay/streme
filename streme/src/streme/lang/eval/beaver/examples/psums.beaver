@@ -1,0 +1,37 @@
+(define (psum-measure x) x)
+  
+(define psum-tree (tree 0 + psum-measure))
+  
+(define l (fixed-random-list 2000000))
+
+(define (list-psum id sum measure lst)
+  (letrec
+      ((list-psum-helper (lambda (lst acc-v acc-l)
+                    (if (null? lst)
+                        (reverse acc-l)
+                        (let ((new-acc-v (sum (measure (car lst)) acc-v)))
+                          (list-psum-helper (cdr lst) new-acc-v (cons new-acc-v acc-l)))))))
+    (list-psum-helper lst id (list id))))
+
+(define t (time (list->tree l psum-tree)))
+
+(time (begin (list-psum 0 + psum-measure l) 'dummy))
+;==> 8932 ms
+
+(time (begin (lpsum 0 + psum-measure l) 'dummy))
+;==> 1988 ms
+
+(time (begin (lpsum-array 0 + psum-measure l) 'dummy))
+;==> 1027 ms
+
+(time (begin (tpsum t) 'dummy))
+;==> 598 ms
+
+(time (begin (tppsum t) 'dummy))
+;==> 482 ms
+
+
+
+ ;'[3 1 7 0 4 1 6 3]
+ ;[3 4 11 11 15 16 22 25]
+ ;<#25# #3#[3], <#8# (1, 7, 0)>, #14#[4, 1, 6, 3]>

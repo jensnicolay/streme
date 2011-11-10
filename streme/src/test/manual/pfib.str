@@ -1,0 +1,27 @@
+(time (letrec ((fib (lambda (n)
+					(if (< n 2)
+							n
+							(let ((p (future (fib (- n 1)))))
+									(+ (fib (- n 2)) (touch p))))))) (fib 30)))		
+									
+									
+(time (letrec ((fib (lambda (n)
+					(if (< n 2)
+							n
+							(let ((p (fib (- n 1))))
+									(+ (fib (- n 2))  p)))))) (fib 30))	)
+									
+									
+(define-pattern (time . ?exps)
+	(let
+		((start (System/currentTimeMillis)))
+			(let
+				((result (begin @?exps)))
+					(let ((end (System/currentTimeMillis)))
+						(newline) (display (- end start)) (display " ms") (newline)
+						result))))									
+						
+						
+						
+(define (fib n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))
+						

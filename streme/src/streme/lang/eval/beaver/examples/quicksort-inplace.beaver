@@ -1,0 +1,39 @@
+(define (quicksort! v)
+  (letrec ((SingleCore-QuickSort
+            (lambda (V Low High)
+              (let* ((Left Low)
+                    (Right High)
+                    (Pivot (vector-ref V (quotient (+ Left Right) 2)))
+                    (Save 0))
+                (letrec ((scanLR
+                          (lambda ()
+                            (if (< Left Right)
+                                (begin
+                                  (letrec ((incL
+                                            (lambda ()
+                                              (if (< (vector-ref V Left) Pivot)
+                                                  (begin
+                                                    (set! Left (+ Left 1))
+                                                    (incL))))))
+                                    (incL))
+                                  (letrec ((decR
+                                            (lambda ()
+                                              (if (> (vector-ref V Right) Pivot)
+                                                  (begin
+                                                    (set! Right (- Right 1))
+                                                    (decR))))))
+                                    (decR))
+                                  (if (<= Left Right)
+                                      (begin
+                                        (set! Save (vector-ref V Left))
+                                        (vector-set! V Left (vector-ref V Right))
+                                        (vector-set! V Right Save)
+                                        (set! Left (+ Left 1))
+                                        (set! Right (- Right 1))))
+                                  (scanLR))))))
+                  (scanLR)
+                  (if (< Low Right)
+                      (SingleCore-QuickSort V Low Right))
+                  (if (> High Left)
+                      (SingleCore-QuickSort V Left High))))))) 
+    (SingleCore-QuickSort v 0 (- (vector-length v) 1))))

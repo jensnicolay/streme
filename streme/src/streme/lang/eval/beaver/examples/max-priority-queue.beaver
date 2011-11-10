@@ -1,0 +1,24 @@
+;
+; max priority queues
+;
+
+(define *min-prio* -1)
+
+(define (pq prio)
+  (tree *min-prio* max prio))
+
+(define (pq-add pq el)
+  (addright pq el))
+
+(define (pq-max pq)
+  (if (empty? pq)
+      "empty tree"
+      (let ((i (cached pq)))
+        (split pq (lambda (v) (>= v i)) *min-prio* (lambda (ls rs)
+                                                     (left rs))))))
+
+; examples
+(define q (pq-add (pq-add (pq-add (pq-add (pq string-length) "one") "two") "three") "four"))
+;==> ["one", "two", "three", "four"]
+(pq-max q) 
+;==> "three"

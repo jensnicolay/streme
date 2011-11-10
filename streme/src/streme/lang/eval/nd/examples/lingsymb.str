@@ -1,0 +1,14 @@
+(define (number-in-range l h)
+	(require (<= l h))
+	(amb l (number-in-range (+ l 1) h)))
+	
+(let ((x (number-in-range 0 10))
+	  (y (number-in-range 0 10)))
+	(require (= 10 (+ x y)))
+	(display (list x y)))
+	  
+	  
+	  
+	  
+
+	

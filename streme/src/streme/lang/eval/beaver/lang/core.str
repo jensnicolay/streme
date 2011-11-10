@@ -1,0 +1,34 @@
+(define-pattern (while ?cond . ?exps)
+	(letrec ((?loop (lambda () (if ?cond (begin @?exps (?loop))))))
+		(?loop)))
+		
+(define-pattern (when ?cond . ?exps)
+	(if ?cond (begin @?exps)))
+		
+(define-pattern (if-not ?cond ?cons ?alt)
+	(if (not ?cond) ?alt ?cons))
+
+(define-pattern (if-not ?cond ?alt)
+	(if (not ?cond) ?alt))
+	
+(define-pattern (when-not ?cond . ?exps)
+	(if (not ?cond) (begin @?exps)))
+
+(define-pattern (time . ?exps)
+	(let
+		((start System/currentTimeMillis))
+			(let
+				((result (begin @?exps)))
+					(let ((end System/currentTimeMillis))
+						(newline) (display (- end start)) (display " ms") (newline)
+						result))))
+						
+(define-macro (amb . ?exps)
+	`(amb-thunks ,@(map (lambda (x) (list 'lambda '() x)) '?exps)))
+			
+(define-pattern (amb-list ?exp)
+	(amb-list-thunk (lambda () ?exp)))
+	
+(define (require p)
+	(if (not p) (amb)))
+	

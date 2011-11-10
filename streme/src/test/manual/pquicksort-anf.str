@@ -1,0 +1,39 @@
+(letrec ((_pivot0 (lambda (_l1 ) 
+(let ((_p13 (null? _l1)) ) 
+(if _p13 'done 
+(let ((_p14 (cdr _l1)) ) 
+(let ((_p15 (null? _p14)) ) 
+(if _p15 'done 
+(let ((_p16 (car _l1)) ) 
+(let ((_p17 (cadr _l1)) ) 
+(let ((_p18 (<= _p16 _p17)) ) 
+(if _p18 
+(let ((_p19 (cdr _l1)) ) (_pivot0 _p19)) (car _l1)))))))))))) ) 
+(letrec ((_partition2 (lambda (_piv3 _l4 _p15 _p26 ) 
+(let ((_p20 (null? _l4)) ) 
+(if _p20 (list _p15 _p26) 
+(let ((_p21 (car _l4)) ) 
+(let ((_p22 (< _p21 _piv3)) ) 
+(if _p22 (let ((_p23 (cdr _l4)) ) 
+(let ((_p24 (car _l4)) ) 
+(let ((_p25 (cons _p24 _p15)) ) 
+(_partition2 _piv3 _p23 _p25 _p26)))) 
+(let ((_p26 (cdr _l4)) ) 
+(let ((_p27 (car _l4)) ) 
+(let ((_p28 (cons _p27 _p26)) ) 
+(_partition2 _piv3 _p26 _p15 _p28))))))))))) ) 
+(letrec ((_quicksort7 (lambda (_ls8 ) 
+(let ((_piv9 (_pivot0 _ls8)) ) 
+(let ((_p29 (eq? _piv9 'done)) ) 
+(if _p29 _ls8 
+(let ((_parts10 (_partition2 _piv9 _ls8 '() '())) ) 
+(let ((_p30 (car _parts10)) ) 
+(let ((_p111 (_quicksort7 _p30)) ) 
+(let ((_p31 (cadr _parts10)) ) 
+(let ((_p212 (_quicksort7 _p31)) ) 
+(append _p111 _p212))))))))))) ) 
+(let ((_p32 (_quicksort7 
+'(
+1 3 2
+)
+)) ) (let ((_p33 'dummy) ) _p33)))))

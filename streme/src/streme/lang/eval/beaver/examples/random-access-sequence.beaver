@@ -1,0 +1,39 @@
+;
+; random-access sequences
+;
+	
+(define (ra-measure v) 1)
+
+(define *ra-null* (tree 0 + ra-measure))
+
+(define (ra . els)
+	(list->tree els *ra-null*))
+		    
+(define (ra-index-pred i)
+	(lambda (v)
+		(> v i)))
+		
+(define (ra-length ra)
+	(cached ra))
+		
+(define (ra-ref ra i)
+	(split ra (ra-index-pred i) 0 (lambda (ls rs)
+	                              	(if (empty? rs)
+	                              	    "index out of bounds"
+	                              	    (left rs)))))
+	 
+; examples	                              	    
+(define l (ra 1 2 3 4 5 6 7))
+(ra-ref l 1)
+;==> 2
+
+
+(define random-list (fixed-random-list 2000000))
+(define t (apply ra random-list))
+(time (list-ref random-list 1500000))
+;==> 9 ms
+(time (ra-ref t 1500000))
+;==> 1 ms
+
+
+ 

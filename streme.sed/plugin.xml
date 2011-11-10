@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            name="Streme Editor"
+            extensions="str"
+            icon="icons/sample.gif"
+            contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
+            class="streme.sed.editors.Sed"
+            id="streme.sed.editors.Sed">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editors">
+      <editor
+            name="Meta Editor"
+            extensions="meta"
+            icon="icons/whatsnew16.png"
+            contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor"
+            class="streme.sed.editors.Meta"
+            id="streme.sed.editors.Meta">
+      </editor>
+   </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               id="streme.sed.views.QueryView"
+               ratio="0.5"
+               relationship="right"
+               relative="org.eclipse.ui.views.TaskList">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            id="streme.sed"
+            name="Query Viewer"
+            parentCategory="org.eclipse.ui">
+      </category>
+      <view
+            category="streme.sed"
+            class="streme.sed.views.QueryView"
+            icon="icons/sample.gif"
+            id="streme.sed.views.QueryView"
+            name="Query View">
+      </view>
+   </extension>
+   
+   <extension
+    id="streme.sed.result"
+    name="Result"
+    point="org.eclipse.core.resources.markers">
+  	<super
+    	type="org.eclipse.core.resources.textmarker">
+  	</super>
+	</extension>
+	
+	<extension
+      point="org.eclipse.ui.editors.annotationTypes">
+   <type
+         markerType="streme.sed.result"
+         name="streme.sed.result">
+   </type>
+  </extension>
+  
+  <extension
+      point="org.eclipse.ui.editors.markerAnnotationSpecification">
+   <specification
+         annotationType="streme.sed.result"
+         colorPreferenceKey="streme.sed.result.color"
+         colorPreferenceValue="192,255,192"
+         contributesToHeader="false"
+         highlightPreferenceKey="streme.sed.result.highlight"
+         highlightPreferenceValue="true"
+         includeOnPreferencePage="true"
+         label="Streme query results"
+         overviewRulerPreferenceKey="streme.sed.result.overview"
+         overviewRulerPreferenceValue="true"
+         presentationLayer="0"
+         textPreferenceKey="streme.sed.result.text"
+         textPreferenceValue="true"
+         textStylePreferenceValue="BOX"
+         verticalRulerPreferenceKey="streme.sed.result.ruler"
+         verticalRulerPreferenceValue="true"
+         symbolicIcon="info">
+   </specification>
+	</extension>
+  <extension
+        point="org.eclipse.ui.commands">
+     <category
+           id="streme.sed.commands.category"
+           name="Sample Category">
+     </category>
+     <command
+           categoryId="streme.sed.commands.category"
+           id="streme.sed.commands.sampleCommand"
+           name="Run meta">
+     </command>
+  </extension>
+  <extension
+        point="org.eclipse.ui.handlers">
+     <handler
+           class="streme.sed.handlers.SampleHandler"
+           commandId="streme.sed.commands.sampleCommand">
+     </handler>
+  </extension>
+  <extension
+        point="org.eclipse.ui.bindings">
+     <key
+           commandId="streme.sed.commands.sampleCommand"
+           contextId="org.eclipse.ui.contexts.window"
+           schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+           sequence="M1+6">
+     </key>
+  </extension>
+  <extension
+        point="org.eclipse.ui.menus">
+     <menuContribution
+           locationURI="popup:streme.sed.editors.Meta.EditorContext?before=additions">
+           <command
+                 commandId="streme.sed.commands.sampleCommand"
+                 id="streme.sed.menus.sampleCommand"
+                 mnemonic="S">
+           </command>
+     </menuContribution>
+  </extension>
+
+</plugin>

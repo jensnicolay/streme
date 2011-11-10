@@ -1,0 +1,35 @@
+=== SPEEDUP
+fib 1
+ast 7375 anf 12390 panf 7172
+
+diviter 100
+ast 1031 anf 1625 panf 1000
+
+tak 10
+ast 4016 anf 6625 panf 3109
+
+=== UNDECIDED
+mbrotcore 10
+ast 12484 anf 18266 panf 17937
+
+cpstak 10
+ast 3844 anf 5594 panf 5625
+
+pnpoly 100
+ast 3046 anf 4438 panf 4375
+
+boyer 1
+ast 238422 anf 362422 panf 364125
+
+nboyer 1
+ast 37531 anf 66500 panf 66562
+
+browse 1
+ast 11609 anf 18734 panf 18609
+
+triangl 1
+ast 547562 anf 899000 panf 906468
+
+=== SLOWDOWN
+divrec 100
+ast 343 anf 484 panf 828

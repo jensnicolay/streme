@@ -1,0 +1,14 @@
+  (let ((mandelbrot (lambda (iterations x y n)
+    					(let ((ci (f- (f/ (f* 2.0 y) n) 1.0))
+          					(cr (f- (f/ (f* 2.0 x) n) 1.5)))
+      					(let loop ((i 0) (zr 0.0) (zi 0.0))
+        					(if (> i iterations)
+            					i
+            					(let ((zrq (f* zr zr))
+                  					(ziq (f* zi zi)))
+              							(cond
+               								((> (f+ zrq ziq) 4.0) i)
+               								(else (loop (+ i 1)
+                           							(f+ (f- zrq ziq) cr)
+                           							(f+ (f* 2.0 zr zi) ci)))))))))))
+          (mandelbrot 30000 62.0 5000.0 10000.0))

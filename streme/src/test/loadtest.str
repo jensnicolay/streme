@@ -1,0 +1,7 @@
+(define a 1)
+;;;; another comment
+(define b 2)
+1
+2
+; comment
+3

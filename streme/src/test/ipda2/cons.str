@@ -1,0 +1,3 @@
+(let ((l '()))
+	(letrec ((f (lambda (i) (if (zero? i) i (begin (set! l (cons i l)) (f (- i 1)))))))
+		(f 10) (f 10) l)))

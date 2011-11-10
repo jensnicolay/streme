@@ -1,0 +1,9 @@
+(letrec ((fib (lambda (n) 
+                (let ((p0 (< n 2))) 
+                  (if p0 n 
+                      (let ((p1 (- n 1))) 
+                        (let ((p2 (fib p1))) 
+                          (let ((p3 (- n 2))) 
+                            (let ((p4 (fib p3))) 
+                              (+ p2 p4)))))))))) 
+  (fib 2))

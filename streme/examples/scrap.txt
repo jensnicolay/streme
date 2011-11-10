@@ -1,0 +1,1 @@
+(define m (lambda (el) (display el) (sleep 2000) (display el)))

@@ -1,0 +1,142 @@
+;
+; Slip: Lisp in 85 lines - Theo D'Hondt:PROG:VUB - January 2009
+;
+
+(begin
+  (define circularity-level 0)
+  (define meta-level-eval eval)
+  (define eval '())
+
+  (define (loop output environment)
+    (define rollback environment)
+
+    (define (evaluate expression)
+
+      (define (error message qualifier)
+        (display message)
+        (loop qualifier rollback))
+
+;
+; functions
+;
+
+      (define (bind-variable variable value)
+        (define binding (cons variable value))
+        (set! environment (cons binding environment)))
+
+      (define (bind-parameters parameters arguments)
+        (cond
+          ((symbol? parameters)
+            (bind-variable parameters arguments))
+          ((pair? parameters)
+            (let 
+              ((variable (car parameters))
+               (value    (car arguments )))
+              (bind-variable variable value)
+              (bind-parameters (cdr parameters) (cdr arguments))))))
+
+      (define (evaluate-sequence expressions)
+        (let*
+          ((head  (car expressions))
+           (tail  (cdr expressions))
+           (value (evaluate head)))
+          (if (null? tail)
+            value
+            (evaluate-sequence tail))))
+
+      (define (build-closure parameters expressions)
+        (define lexical-environment environment)
+        (lambda arguments
+          (define dynamic-environment environment)
+          (set! environment lexical-environment)
+          (bind-parameters parameters arguments)
+          (let 
+            ((value (evaluate-sequence expressions)))
+            (set! environment dynamic-environment)
+            value)))
+
+;
+; evaluation functions
+;
+
+      (define (evaluate-application operator)
+        (lambda operands
+          (apply (evaluate operator) (map evaluate operands))))
+
+      (define (evaluate-begin . expressions)
+        (evaluate-sequence expressions))
+
+      (define (evaluate-define pattern . expressions)
+        (if (symbol? pattern)
+          (let*
+            ((value   (evaluate (car expressions)))
+             (binding (cons pattern value)))
+            (set! environment (cons binding environment))
+            value)
+          (let
+            ((binding (cons (car pattern) '())))
+            (set! environment (cons binding environment))
+            (let
+              ((closure (build-closure (cdr pattern) expressions)))
+              (set-cdr! binding closure)
+              closure))))
+
+      (define (evaluate-if predicate consequent . alternate)
+        (if (evaluate predicate) 
+          (evaluate consequent)
+          (if (null? alternate)
+            '()
+            (evaluate (car alternate)))))
+
+      (define (evaluate-lambda parameters . expressions)
+        (build-closure parameters expressions))
+
+      (define (evaluate-quote expression)
+        expression)
+
+      (define (evaluate-set! variable expression)
+        (define value (evaluate expression))
+        (define binding (assoc variable environment))
+        (if binding
+           (set-cdr! binding value)
+           (error "inaccessible variable: " variable)))
+
+      (define (evaluate-variable variable)
+        (define binding (assoc variable environment))
+        (if binding
+          (cdr binding)
+          (meta-level-eval variable (interaction-environment))))
+
+;
+; evaluator
+;
+
+      (cond
+        ((symbol? expression)
+         (evaluate-variable expression))
+        ((pair? expression)
+         (let ((operator (car expression))
+               (operands (cdr expression)))
+           (apply
+             (case operator
+               ((begin)  evaluate-begin )
+               ((define) evaluate-define)
+               ((if)     evaluate-if    )
+               ((lambda) evaluate-lambda)
+               ((quote)  evaluate-quote ) 
+               ((set!)   evaluate-set!  )
+               (else     (evaluate-application operator))) operands)))
+        (else
+          expression)))
+
+;
+; read-eval-print
+;
+
+    (display output)
+    (newline)
+    (display "level 0>")
+    (set! eval evaluate)
+    (loop (evaluate (read)) environment))
+
+  (loop "Root-Level Slip" '()))

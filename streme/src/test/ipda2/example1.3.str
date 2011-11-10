@@ -1,0 +1,7 @@
+(let ((r #f)) 
+	(let ((read-r (lambda () r)))
+		(let ((ind-read-r (lambda () (read-r))))
+			(let ((write-r (lambda () (set! r #t))))
+				(let ((d1 (write-r)))
+					(let ((d2 (ind-read-r)))
+						0))))))

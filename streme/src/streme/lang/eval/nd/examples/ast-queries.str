@@ -1,0 +1,158 @@
+;;;
+(define *ast* (create-ast '(let ((a 2)) (let ((a (* a a))) a))))
+(define *analysis* (analyze-ast *ast*))
+
+(let ((var-a (a-var-with-name 'a)))
+  `(var ,var-a bound in ,(parent-of var-a) is referenced in ,(parent-of (a-read-ref var-a))))
+  
+(define vars (amb-list (a-var)))
+
+(define (make-unique-names in out count)
+  (if (null? in)
+      out
+      (let ((var (car in)))
+        (make-unique-names (cdr in) 
+                           (cons (cons var 
+                                       (string-append (symbol->string (var-name var)) 
+                                                      (number->string count))) 
+                                 out) 
+                           (+ count 1)))))
+
+(define (alpha-convert ast)
+  (let* ((vars (amb-list (a-var)))
+         (names (make-unique-names vars '() 0)))
+    (rewrite ast (lambda (node)
+                   (cond ((var? node) (create-var (cdr (assoc node names))))
+                         ((ref? node)
+                          (let ((var (var-read node)))
+                            (if var
+                                (create-ref (cdr (assoc var names)))
+                                #f)))
+                         (else #f))))))
+		
+;;;
+(define *ast* (create-ast '(letrec ((f (lambda (n) (if (< n 2) n (+ (f (- n 2)) (f (- n 1))))))) (f 4))))
+(define *analysis* (analyze-ast *ast*))
+
+(let ((n (a-node))) (require (application? n)) (ipd-reads n))
+(let ((n (a-node))) (require (application? n)) (ipd-writes n))
+
+;;;
+(define *ast* (create-ast '(let* ((a 10) (b 20) (c (+ a b)) (d (set! b b))) c)))
+(define *analysis* (analyze-ast *ast*))
+
+(define bb (a-binding-for-name 'b))
+(define bc (a-binding-for-name 'c))
+(define bd (a-binding-for-name 'd))
+
+(define e1 (binding-value bc))
+(define e2 (binding-value bd))
+
+(a-dependency-between e1 e2)
+(a-dependency-between e2 e2)
+
+(a-dependency-between (binding-var bb) e2)
+
+
+;;;
+(define *ast* (create-ast '(let* ((z 0) (writez (lambda () (set! z 123))) (readz (lambda () z))) (cons (writez) (readz)))))
+(define *analysis* (analyze-ast *ast*))
+
+(define bw (a-binding-for-name 'writez))
+(define br (a-binding-for-name 'readz))
+
+(define ew (binding-value bw))
+(define er (binding-value br))
+
+(a-dependency-between ew er)
+
+(define aw (parent-of (a-ref-with-name 'writez)))
+(define ar (parent-of (a-ref-with-name 'readz)))
+
+(a-dependency-between aw ar)
+(dependent? aw ar)
+
+;;;
+(define *ast* (create-ast '(cons a b)))
+(define *analysis* (analyze-ast *ast*))
+
+(define *ast* (create-ast '(cons a b)))
+(define *analysis* (analyze-ast *ast*))
+
+(define (primitive? operator)
+	(if (ref? ))
+
+;;;
+(define *ast* (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))))
+(define *analysis* (analyze-ast *ast*))
+
+(define app (an-application-with-operator (a-ref-with-name 'append)))
+(define e1 (application-operand app 0))
+(define e2 (application-operand app 1))
+(a-dependency-between e1 e2)
+
+;;;
+(define *ast* (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define z '()) (define conser (lambda (x) (set! z (cons x z)) z)) (appender (lister conser) 42 43))))
+(define *analysis* (analyze-ast *ast*))
+
+(define app (an-application-with-operator (a-ref-with-name 'append)))
+(define e1 (application-operand app 0))
+(define e2 (application-operand app 1))
+(a-dependency-between e1 e2)
+(independent? e1 e2)
+
+
+(define (list-of-applications? l)
+  (if (null? l)
+      #t
+      (and (application? (car l)) (list-of-applications? (cdr l)))))
+      
+(define (parallelize-invocations ast)
+  (rewrite ast
+           (lambda (node)
+             (if (application? node)
+                 (let
+                     ((operands (application-operands node)))
+                   (if (and (>= (length operands) 2) 
+                            (apply independent? operands) 
+                            (list-of-applications? operands))
+                       (create-application (create-ref 'pcall)
+                                           (cons (application-operator node) operands))
+                       #f))
+                 #f))))
+                     
+(parallelize-invocations *ast*)
+
+
+;;;
+(define *ast* (create-ast '(define f (lambda (n) (if (= n 0) 1 (* n (f (- n 1))))))))
+(define *analysis* (analyze-ast *ast*))
+
+(define (flatten xs)
+  (cond ((null? xs) xs)
+        ((list? xs)
+          (append (flatten (car xs))
+                  (flatten (cdr xs))))
+        (else (list xs))))
+
+
+
+(rewrite *ast* (lambda (n) (if (var? n) (cons n (.getTag n))) '())) (lambda (type . values) (apply append (map flatten values))))
+		
+
+;;; SCRAP
+(let ((n (a-node))) (require (var? n)) n)
+(define (get-vars)
+	(let ((n (a-node))) (require (var? n)) (require (not (set-var? (parent-of n)))) n))
+
+	
+(define (*do-it*)
+	(*proc*))
+(define (*proc*)
+	(display "old"))
+	
+(define (t)
+	(let ((*proc* (lambda ()
+					(display "new") (*proc*))))
+	  (*do-it*)))
+

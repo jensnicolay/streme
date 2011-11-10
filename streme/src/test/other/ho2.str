@@ -1,0 +1,16 @@
+(begin
+
+(define (appender f a b)
+  (append (f a) (f b)))
+
+(define (lister g)
+  (lambda (x)
+    (list (g x))))
+
+(define z '())
+
+(define (conser x)
+  (set! z (cons x z)) z)
+
+(appender (lister conser) 42 43)
+)

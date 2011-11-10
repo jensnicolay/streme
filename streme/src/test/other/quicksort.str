@@ -1,0 +1,25 @@
+(letrec
+    ((pivot (lambda (l)
+              (cond 
+                ((null? l) 'done)
+                ((null? (cdr l)) 'done)
+                ((<= (car l) (cadr l)) (pivot (cdr  l)))
+                (else (car l))))))
+  (letrec
+      ((partition (lambda (piv l ppp1 ppp2)
+                    (if (null? l) (list ppp1 ppp2)
+                        (if (< (car l) piv) (partition piv (cdr l) (cons (car l) ppp1) ppp2)
+                            (partition piv (cdr l) ppp1 (cons (car l) ppp2)))))))
+    (letrec
+        ((quicksort (lambda (ls)
+        							;(display (length ls))
+                      (let
+                          ((piv (pivot ls)))
+                        (if (eq? piv 'done)
+                            ls
+                            (let ((parts (partition piv ls '() '())))
+                                ; (display (list (length (car parts)) (length (cadr parts))))
+                              (let ((p1 (quicksort (car parts)))
+                                    (p2 (quicksort (cadr parts))))
+                                (append p1 p2))))))))  
+      (quicksort (fixed-random-list ?sort.n)) 'dummy)))							     

@@ -1,0 +1,31 @@
+(define-pattern (serialize ?serializer . ?exps)
+	(serial ?serializer (lambda (?y) (let ((?value (begin @?exps))) (yield ?y) ?value))))
+
+(define-pattern (future . ?exps)
+	(serial ?serializer (lambda (?y) (yield ?y) @?exps)))
+							
+(define-pattern (unresolved-lambda-serial ?params . ?exps)
+	(let
+		((?s (serializer)))
+			(lambda ?params
+				(serialize ?s @?exps))))
+				
+(define (make-agent state)
+	(unresolved-lambda-serial (proc)
+		(let ((new-state (apply proc (list state)))) (set! state new-state) new-state)))
+
+(define-pattern (lambda-serial ?params . ?exps)
+	(touch (unresolved-lambda-serial ?params @?exps)))
+
+				
+(define a (make-agent 10))				
+				
+(a (lambda (state) (+ state 1)))
+
+(a (lambda (state) (display state)))
+
+(touch (a (lambda (state) (+ state 1))))
+
+(touch (a (lambda (state) (newline) (display state) (sleep 3000) (+ state 1))))
+
+(define t (lambda-serial () (display "(") (sleep 2000) (display ")")))

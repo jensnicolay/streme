@@ -1,0 +1,14 @@
+(begin
+
+(define (appender f a b)
+  (append (f a) (f b)))
+
+(define (lister g)
+  (lambda (x)
+    (list (g x))))
+
+(define (square x)
+  (* x x))
+
+(appender (lister square) 42 43)
+)

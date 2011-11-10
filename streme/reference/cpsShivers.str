@@ -1,0 +1,100 @@
+(define gensym
+  (let ((counter -1))
+    (lambda ()
+      (set! counter (+ counter 1))
+      (string->symbol (string-append "k" (number->string counter))))))
+
+(define (primop? x)
+  (memv x '(+k *k printk =k)))
+
+(define (convert exp k)
+  (cond
+    ((pair? exp)
+     (let
+         ((proc (car exp))
+          (args (cdr exp)))
+       (cond
+         ((eq? proc 'lambda)
+          (let
+              ((params (car args))
+               (body (cdr args))
+               (p (gensym)))
+            (list k (list 'lambda (cons p params) (convert-sequence body p)))))
+         ((eq? proc 'begin)
+          (convert-sequence args k))
+         ((eq? proc 'if)
+          (let
+              ((condition (car args))
+               (consequent (cadr args))
+               (alternate (caddr args))
+               (p (gensym))           
+               (j (gensym)))
+            (convert condition (list 'lambda (list p) (list (list 'lambda (list j)
+                                                                  (list '%if
+                                                                        (list 'lambda '() (convert consequent j))
+                                                                        (list 'lambda '() (convert alternate j))
+                                                                        p))
+                                                            k)))))
+         ((primop? proc)
+          (convert-arguments args (list proc k)))
+         (else
+         	(let
+                    ((p (gensym)))
+                  (convert proc (list 'lambda (list p) (convert-arguments args (list p k)))))))))
+    (else (list k exp))))
+
+(define (convert-arguments args k)
+  (if (null? args)
+      k
+      (let
+          ((arg (car args))
+           (rest (cdr args))
+           (a (gensym)))
+        (if (number? arg)
+            (convert-arguments rest (append k (list arg)))
+            (convert arg (list 'lambda (list a) (convert-arguments rest (append k (list a)))))))))
+
+(define (convert-sequence args k)
+  (if (null? (cdr args))
+      (convert (car args) k)
+      (let
+          ((first (car args))
+           (rest (cdr args))
+           (p (gensym)))
+        (convert first (list 'lambda (list p) (convert-sequence rest k))))))
+
+(define (+k k a b)
+  (k (+ a b)))
+
+(define (*k k a b)
+  (k (* a b)))
+
+(define (=k k a b)
+  (k (= a b)))
+
+(define (%if tk fk v)
+  (if v
+      (tk)
+      (fk)))
+
+(define (printk k x)
+  (display x)
+  (k 'unspecified))
+
+(define (endk x)
+  x)
+
+(define (test1)
+  (convert '(printk (*k 2 3)) 'endk))
+
+(define (test2)
+  (convert '(printk (*k (+k 1 2) (+k 3 4))) 'endk))
+
+(define (test3)
+  (convert '(if (=k 1 0) 11 22) 'endk))
+
+(define (test4)
+  (convert '(lambda (a b) a b) 'endk))
+  
+(define (test5)
+  (convert '(lambda (a) (printk (*k a a))) 'endk))

@@ -1,0 +1,23 @@
+(load "lang/java.str")
+
+(define (celsius)
+	(let ((frame (javax.swing.JFrame. "Celsius Converter"))
+		  (temp-text (javax.swing.JTextField.))
+		  (celsius-label (javax.swing.JLabel. "Celsius"))
+		  (convert-button (javax.swing.JButton. "Convert"))
+		  (fahrenheit-label (javax.swing.JLabel. "Fahrenheit")))
+		(.addActionListener convert-button 
+			(implement (java.awt.event.ActionListener)
+				(actionPerformed (lambda (evt)
+					(let
+						((c (Double/parseDouble (.getText temp-text))))
+					  (.setText fahrenheit-label (string-append (String/valueOf (+ 32.0 (* 1.8 c))) " Fahrenheit")))))))
+		(.setLayout frame (java.awt.GridLayout. 2 2 3 3))
+		(.add frame temp-text)
+		(.add frame celsius-label)
+		(.add frame convert-button)
+		(.add frame fahrenheit-label)
+		(.setSize frame 300 80)
+		(.setVisible frame #t)))
+		
+(celsius)

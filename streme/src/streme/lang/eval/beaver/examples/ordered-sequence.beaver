@@ -1,0 +1,46 @@
+;
+; ordered sequences
+;
+
+(define *os-id* 'id)
+  
+(define (os-sum a b)
+  (if (= b *os-id*)
+  		a
+  		b))
+  
+(define (os-measure v) v)
+
+(define *os-null* (tree *os-id* os-sum os-measure))
+
+(define (os-partition-pred k)
+	(lambda (v)
+		(>= v k)))
+
+(define (os-partition os k)
+	(split os (os-partition-pred k) *os-id* (lambda (ls rs)
+	                                          (cons ls rs))))
+	                                                     
+(define (os-insert os x)
+  (let ((p (os-partition os x)))
+    (conc (car p) (addleft (cdr p) x))))                                        
+
+(define (os-merge-pred k)
+	(lambda (v)
+		(> v k)))
+
+(define (os-merge x y)
+  (if (empty? y)
+      x
+      (let ((y-head (left y))
+            (y-tail (lefttail y)))
+        (split x (os-merge-pred (os-measure y-head)) *os-id* (lambda (ls rs)
+                                                               (conc ls (addleft (os-merge y-tail rs) y-head))))))) 
+
+; examples
+(define t (os-insert (os-insert (os-insert *os-null* 2) 1) 3))
+t
+;==> [1, 2, 3]
+(define t2 (os-insert (os-insert (os-insert *os-null* 6) 4) 5))
+(os-merge t2 t)
+;==> [1, 2, 3, 4, 5, 6]

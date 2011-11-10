@@ -1,0 +1,31 @@
+(begin
+	(define r #f)
+	(define (f) (g))
+	(define (g) (h))
+	(define (h) (set! r 42))	
+	(f)
+	r)
+
+(begin
+	(define r #f)
+	(define (read-r) r)
+	(define (indirectly-read-r) (read-r))
+	(define (write-r) (set! r 42))
+	(write-r)
+	(indirectly-read-r))
+	
+(let*
+	((z 0)
+	 (f (lambda (r) (set! z r)))
+	 (g (lambda (s) z)))
+  (let
+  	((a (f 42))
+  	 (b (g 89)))
+   (cons a b)))
+
+(begin
+	(define (fact n)
+		(if (zero? n)
+			1 
+			(* n (fact (- n 1)))))
+	(fact 2))

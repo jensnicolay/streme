@@ -1,0 +1,22 @@
+(define-rule '(man adam))
+(define-rule '(man peter))
+(define-rule '(man paul))
+		
+(define-rule '(woman marry))
+(define-rule '(woman eve))
+
+(define-rule '(parent adam peter))
+(define-rule '(parent eve peter))
+(define-rule '(parent adam paul))
+(define-rule '(parent marry paul))
+		
+(define-rule '(father ?f ?c) '(and (man ?f) (parent ?f ?c)))
+(define-rule '(mother ?m ?c) '(and (woman ?m) (parent ?m ?c)))
+
+  
+(query '(man ?x))
+(query '(and (man ?x) (man ?x)))
+	
+		
+(define-rule '(append () ?y ?y))
+(define-rule '(append (?u . ?v) ?y (?u . ?z)) '(append ?v ?y ?z))

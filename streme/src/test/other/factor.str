@@ -1,0 +1,29 @@
+(letrec ((factor (lambda (n)
+                   (let ((extract-twos
+                          (lambda (n)
+                            (let loop ((two-list '())
+                                       (rest n))
+                              (if (Ieven? rest)
+                                  (loop (cons 2I two-list) (Iquotient rest 2I))
+                                  (cons rest two-list)))))
+
+                         (extract-odd-factors
+                          (lambda (partial-factorization)
+                            (let loop ((so-far (cdr partial-factorization))
+                                       (odd-product (car partial-factorization))
+                                       (trial-divisor 3I))
+                              (cond ((< odd-product (I* trial-divisor trial-divisor))
+                                     (reverse (cons odd-product so-far)))
+                                    ((Izero? (Iremainder odd-product trial-divisor))
+                                     (loop (cons trial-divisor so-far)
+                                           (Iquotient odd-product trial-divisor)
+                                           trial-divisor))
+                                    (else
+                                     (loop so-far
+                                           odd-product
+                                           (I+ trial-divisor 2I))))))))
+                     (let ((partial-factorization (extract-twos n)))
+                       (if (= (car partial-factorization) 1I)
+                           (cdr partial-factorization)
+                           (extract-odd-factors partial-factorization)))))))
+  (factor 35742549198872617291I))

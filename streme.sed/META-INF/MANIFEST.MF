@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Streme Editor
+Bundle-SymbolicName: streme.sed; singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: streme.sed.Activator
+Bundle-Vendor: Jensiesoft
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.core.runtime,
+ org.eclipse.jface.text,
+ org.eclipse.ui.editors,
+ streme;bundle-version="1.0.0",
+ org.eclipse.core.resources;bundle-version="3.7.100",
+ org.eclipse.jdt.core;bundle-version="3.7.0",
+ org.eclipse.ui.ide;bundle-version="3.7.0",
+ org.eclipse.compare;bundle-version="3.5.200"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-ActivationPolicy: lazy

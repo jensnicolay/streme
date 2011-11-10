@@ -1,0 +1,26 @@
+(let
+    ((split (lambda (ls)
+              (letrec ((split-h (lambda (ls ls1 ls2)
+                                  (cond
+                                    ((or (null? ls) (null? (cdr ls)))
+                                     (cons (reverse ls2) ls1))
+                                    (else (split-h (cddr ls) (cdr ls1) (cons (car ls1) ls2)))))))
+                (split-h ls ls '())))))
+  (letrec
+      ((merge (lambda (ls1 ls2)
+                (cond 
+                  ((null? ls1) ls2)
+                  ((null? ls2) ls1)
+                  ((<= (car ls1) (car ls2))
+                   (cons (car ls1) (merge (cdr ls1) ls2)))
+                  (else (cons (car ls2) (merge ls1 (cdr ls2))))))))
+    (letrec
+        ((merge-sort (lambda (ls)
+                       (cond
+                         ((null? ls) ls)
+                         ((null? (cdr ls)) ls)
+                         (else (let ((splits (split ls)))
+                                 (let ((p1 (merge-sort (car splits)))
+                                       (p2 (merge-sort (cdr splits))))
+                                 (merge p1 p2))))))))
+  (merge-sort (fixed-random-list ?sort.n)) 'dummy)))										     
