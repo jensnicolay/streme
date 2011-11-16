@@ -335,6 +335,10 @@ public class Primitives
     {
       clazz = Long.class;
     }
+    else if ("Void".equals(name))
+    {
+      clazz = Void.class;
+    }
     else if ("Math".equals(name))
     {
       clazz = Math.class;

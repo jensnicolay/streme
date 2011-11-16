@@ -1,4 +1,4 @@
-package streme.lang.test;
+package streme.lang.analysis.test;
 
 import java.util.Arrays;
 import java.util.HashSet;

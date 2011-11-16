@@ -67,9 +67,13 @@ public class QEval
       Pair pair = (Pair) query;
       Object car = pair.car();
       Lst contents = (Lst) pair.cdr();
-      if (car == new Sym("and"))
+      if (car instanceof Sym)
       {
-        return conjoin(contents, frame, env, success, fail);
+        String name = ((Sym) car).getName();
+        if ("and".equals(name))
+        {
+          return conjoin(contents, frame, env, success, fail);
+        }
       }
     }
     return simpleQuery(query, frame, env, success, fail);

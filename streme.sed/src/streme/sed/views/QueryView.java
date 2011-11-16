@@ -42,7 +42,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
-import org.eclipse.jface.viewers.ViewerSorter;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.graphics.Image;
@@ -76,13 +75,15 @@ import streme.lang.data.Data;
 import streme.lang.data.DataTemplate;
 import streme.lang.data.Lst;
 import streme.lang.data.SpParser2;
-import streme.lang.eval.nd.NdAnalysisStreme;
+import streme.lang.data.Sym;
 import streme.lang.eval.nd.NdStremePrimitives;
 import streme.sed.Activator;
 import streme.sed.EditorChangeProvider;
 import streme.sed.EditorInput;
 import streme.sed.IEditorChangeListener;
 import streme.sed.editors.Sed;
+import streme.lang.eval.spatt.Spatt;
+import streme.lang.eval.tanfe.StremeContext;
 
 public class QueryView extends ViewPart
 {
@@ -359,14 +360,17 @@ public class QueryView extends ViewPart
 			ITextEditor editor = queryModel.getEditor();
 			if (metaResult instanceof Iterable)
 			{
-				for (Object o : (Iterable) metaResult
-						)
+				for (Object o : (Iterable) metaResult)
 				{
 					// if (o instanceof Node)
 					{
 						invisibleRoot.addChild(new TreeObject(o, editor));
 					}
 				}
+			}
+			else
+			{
+              invisibleRoot.addChild(new TreeObject(metaResult, editor));			  
 			}
 			v.refresh();
 		}
@@ -474,9 +478,9 @@ public class QueryView extends ViewPart
 		}
 	}
 
-	class NameSorter extends ViewerSorter
-	{
-	}
+//	class NameSorter extends ViewerSorter
+//	{
+//	}
 
 	/**
 	 * The constructor.
@@ -508,7 +512,7 @@ public class QueryView extends ViewPart
 		drillDownAdapter = new DrillDownAdapter(treeViewer);
 		treeViewer.setContentProvider(new ViewContentProvider());
 		treeViewer.setLabelProvider(new ViewLabelProvider());
-		treeViewer.setSorter(new NameSorter());
+		// treeViewer.setSorter(new NameSorter());
 		// treeViewer.setInput(getViewSite());
 
 		metaEditorsViewer = new ListViewer(sash);
@@ -810,29 +814,14 @@ public class QueryView extends ViewPart
 		StremeSpDataCompiler2 compiler = new StremeSpDataCompiler2(parser.getSps());
 		Node ast = compiler.compileBody(Lst.valueOf(datas));
 		ast.setProperty("root", true);
-		NdAnalysisStreme querier = new NdAnalysisStreme(ast);
+		Spatt spatt = new Spatt();
+		spatt.globalEnv().add(new Sym("*ast*"), ast);
 
-		IStructuredSelection restrictionSelection = (IStructuredSelection) treeViewer.getSelection();
-		Object metaTextData;
-		if (restrictionSelection.isEmpty())
-		{
-			metaTextData = querier.getStreme().read(new StringReader("(begin\n" + metaSource + ")"));
-		}
-		else
-		{
-			DataTemplate template = new DataTemplate(querier.getStreme().read(new StringReader("(in ~0 " + metaSource + ")")));
-			Object[] args = restrictionSelection.toArray();
-			Object[] restrictionNodes = new Node[args.length];
-			for (int i = 0; i < args.length; i++)
-			{
-				Object object = ((TreeObject) args[i]).getObject();
-				restrictionNodes[i] = object instanceof Node ? (Node) object : Literal.UNDEFINED;
-			}
-			metaTextData = template.substitute(restrictionNodes);
-		}
-
-		metaResult = querier.dataQuery(metaTextData, Object.class);
-		tagNodes(metaResult, ast, querier.query("(parent-analysis)", ParentAnalysis.class).get(0));
+//		IStructuredSelection restrictionSelection = (IStructuredSelection) treeViewer.getSelection();
+//		if (restrictionSelection.isEmpty())
+		
+		metaResult = spatt.readEval(metaSource, spatt.globalEnv());
+		tagNodes(metaResult, spatt);
 		System.out.println(metaResult.getClass() + ": " + metaResult);
 		QueryModel queryModel = new QueryModel(metaResult, sourceEditor);
 		treeViewer.setInput(queryModel);
@@ -841,12 +830,13 @@ public class QueryView extends ViewPart
 		sourceEditor.replaceAnnotations(newAnnotations);
 	}
 
-	private void tagNodes(Object result, Node ast, ParentAnalysis parentAnalysis)
+	private void tagNodes(Object result, Spatt context)
 	{
 		if (result instanceof Node)
 		{
 			Node node = (Node) result;
-			if (ParentAnalyzer.getRoot(node, parentAnalysis).equals(ast))
+			boolean fromSource = !Boolean.FALSE.equals(context.readEval("(memq ~0 (nodes *ast*))", node));
+			if (fromSource)
 			{
 				node.setProperty("fromSource", true);
 			}
@@ -855,7 +845,7 @@ public class QueryView extends ViewPart
 		{
 			for (Object o : (Iterable) result)
 			{
-				tagNodes(o, ast, parentAnalysis);
+				tagNodes(o, context);
 			}
 		}
 	}

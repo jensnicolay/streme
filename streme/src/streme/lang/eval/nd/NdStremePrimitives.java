@@ -18,6 +18,7 @@ import streme.lang.StremeException;
 import streme.lang.TCont;
 import streme.lang.ast.Literal;
 import streme.lang.data.BigRational;
+import streme.lang.data.Data;
 import streme.lang.data.DataUnifier;
 import streme.lang.data.Lst;
 import streme.lang.data.Null;
@@ -1952,7 +1953,7 @@ public class NdStremePrimitives
   {
     public Callable<Callable> apply1(Object operand, MapEnv env, TSuccess cont, TCont fail)
     {
-      System.out.print(operand);
+      System.out.print(Data.toString(operand));
       return cont.call(Void.TYPE, fail);
     }
   }

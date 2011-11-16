@@ -22,13 +22,4 @@
 					(let ((end System/currentTimeMillis))
 						(newline) (display (- end start)) (display " ms") (newline)
 						result))))
-						
-(define-macro (amb . ?exps)
-	`(amb-thunks ,@(map (lambda (x) (list 'lambda '() x)) '?exps)))
-			
-(define-pattern (amb-list ?exp)
-	(amb-list-thunk (lambda () ?exp)))
-	
-(define (require p)
-	(if (not p) (amb)))
-	
+

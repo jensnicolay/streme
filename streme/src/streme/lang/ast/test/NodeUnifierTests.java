@@ -1,4 +1,4 @@
-package streme.lang.test;
+package streme.lang.ast.test;
 
 import java.util.Map;
 import java.util.TreeMap;

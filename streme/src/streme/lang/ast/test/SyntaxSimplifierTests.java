@@ -1,4 +1,4 @@
-package streme.lang.test;
+package streme.lang.ast.test;
 
 import junit.framework.TestCase;
 import streme.lang.ast.AstDataCompiler;

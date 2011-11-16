@@ -480,7 +480,7 @@ public class NdQueryPrimitives
         return cont.call(new If((Node) condition, (Node) consequent, (Node) alternate), fail);
       }
     });
-    env.add(new Sym("if-condition"), new Procedure()
+    env.add(new Sym("fcondition"), new Procedure()
     {
       public Callable<Callable> apply1(Object operand, MapEnv env, TSuccess cont, TCont fail)
       {

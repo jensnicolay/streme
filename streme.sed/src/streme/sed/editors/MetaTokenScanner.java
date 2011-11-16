@@ -44,6 +44,8 @@ public class MetaTokenScanner extends RuleBasedScanner
     matcher.addWord("/", primitive);
     matcher.addWord(">", primitive);
     matcher.addWord(">=", primitive);
+    matcher.addWord("<", primitive);
+    matcher.addWord("<=", primitive);
     matcher.addWord("apply", primitive);
     matcher.addWord("car", primitive);
     matcher.addWord("cdr", primitive);
@@ -59,15 +61,17 @@ public class MetaTokenScanner extends RuleBasedScanner
     matcher.addWord("application-operands", queryPrimitive);
     matcher.addWord("application-operator", queryPrimitive);
     matcher.addWord("independent?", queryPrimitive);
-    matcher.addWord("name-in-scope?", queryPrimitive);
+    matcher.addWord("lookup-ref-var", queryPrimitive);
+    matcher.addWord("lookup-set-var", queryPrimitive);
+    matcher.addWord("lookup-var-name", queryPrimitive);
+    matcher.addWord("nodes", queryPrimitive);
+    matcher.addWord("parent", queryPrimitive);
     matcher.addWord("ref?", queryPrimitive);
     matcher.addWord("set?", queryPrimitive);
     matcher.addWord("set-var", queryPrimitive);
     matcher.addWord("set-value", queryPrimitive);
     matcher.addWord("var?", queryPrimitive);
-    matcher.addWord("var-read", queryPrimitive);
-    matcher.addWord("a-var-with-name", queryPrimitive);
-    matcher.addWord("var-written", queryPrimitive);
+    matcher.addWord("vars-with-name", queryPrimitive);
 
     matcher.addWord("create-application", transformPrimitive);
     matcher.addWord("create-ref", transformPrimitive);

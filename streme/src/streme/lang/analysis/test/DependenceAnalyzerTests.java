@@ -1,4 +1,4 @@
-package streme.lang.test;
+package streme.lang.analysis.test;
 
 import junit.framework.TestCase;
 import streme.lang.Logging;

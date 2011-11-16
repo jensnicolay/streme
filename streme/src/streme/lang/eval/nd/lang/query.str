@@ -116,6 +116,28 @@
 	
 (define (a-lambda)
 	(a-lambda-in *ast*))
+	
+(define (a-let-in ast)
+	(let ((n (a-node-in ast))) (require (let? n)) n))
+	
+(define (a-let)
+	(a-let-in *ast*))
+	
+(define (let-kind let)
+	(.getKind let))	
+	
+(define (let-kind-let? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LET))
+	
+(define (let-kind-let*? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETSTAR))
+	
+(define (let-kind-letrec? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETREC))
+	
+(define (let-kind-letpar? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETPAR))
+	
 		
 ;; VAR POINTER
 (define (var-pointer-analysis)
@@ -198,6 +220,8 @@
 	           (require (not (eq? e1 e2)))
 	           (require (dependent? e1 e2))))))
 	           	           
+;; NEW
+	      
 	           
 ;; ALIASES
 

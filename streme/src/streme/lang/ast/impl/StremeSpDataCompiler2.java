@@ -2,6 +2,7 @@ package streme.lang.ast.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,6 @@ import streme.lang.ast.Ref;
 import streme.lang.ast.SetVar;
 import streme.lang.ast.Var;
 import streme.lang.data.Lst;
-import streme.lang.data.Lst.Mapper;
 import streme.lang.data.Null;
 import streme.lang.data.Pair;
 import streme.lang.data.SpData;
@@ -33,6 +33,11 @@ import streme.lang.data.Sym;
 public class StremeSpDataCompiler2 implements AstDataCompiler
 {
   private Map<Object, SpData> sps;
+
+  public StremeSpDataCompiler2()
+  {
+    this(Collections.<Object, SpData>emptyMap());
+  }
 
   public StremeSpDataCompiler2(Map<Object, SpData> sps)
   {
@@ -85,7 +90,7 @@ public class StremeSpDataCompiler2 implements AstDataCompiler
         if ("quote".equals(name))
         {
           SpData spData = sps.get(pair);
-          boolean datum = "'".equals(spData.getOriginal());
+          boolean datum = spData == null || "'".equals(spData.getOriginal());
           Object value = pair.cadr();
           Literal literal = new Literal(value, datum ? Kind.DATUM : Kind.QUOTE);
           // literal.setProperty("sp", sps.get(value));
@@ -121,8 +126,16 @@ public class StremeSpDataCompiler2 implements AstDataCompiler
     Node actualBody;
     SpData sp1 = (SpData) compiledBody[0].getProperty("sp");
     SpData sp2 = (SpData) compiledBody[compiledBody.length - 1].getProperty("sp");
-    SpData sp = new SpData(sp1.getPrefix(), sp1.getPos(), sp1.getLine(), sp1.getLinePos(), sp2.getEndPos()
+    SpData sp;
+    if (sp1 != null && sp2 != null)
+    {
+      sp = new SpData(sp1.getPrefix(), sp1.getPos(), sp1.getLine(), sp1.getLinePos(), sp2.getEndPos()
         - sp1.getPos(), sp2.getSuffix());
+    }
+    else
+    {
+      sp = null;
+    }
     if (compiledBody.length == 1)
     {
       actualBody = compiledBody[0];
@@ -130,7 +143,10 @@ public class StremeSpDataCompiler2 implements AstDataCompiler
     else
     {
       actualBody = new Begin(compiledBody, Begin.Kind.IMPLICIT);
-      sp.setOriginal("");
+      if (sp != null)
+      {
+        sp.setOriginal("");
+      }
     }
     return annotate(actualBody, sp);
   }

@@ -181,7 +181,7 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
 
   private int k;
   private boolean gc;
-  private Map<Var, Map<AbstractVar<Time>, AbstractValue>> envs = new HashMap<Var, Map<AbstractVar<Time>, AbstractValue>>();
+  private Map<Object, AbstractValue> env = new HashMap<Object, AbstractValue>();
   private Map<Application, Set<AbstractVar<Time>>> reads = new HashMap<Application, Set<AbstractVar<Time>>>();
   private Map<Application, Set<AbstractVar<Time>>> writes = new HashMap<Application, Set<AbstractVar<Time>>>();
   private Map<Application, Set<CallingContext>> callingContexts = new HashMap<Application, Set<CallingContext>>();
@@ -492,22 +492,11 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
     }
   }
 
-  private Map<AbstractVar<Time>, AbstractValue> getEnv(Var var)
-  {
-    Map<AbstractVar<Time>, AbstractValue> env = envs.get(var);
-    if (env == null)
-    {
-      env = new LinkedHashMap<AbstractVar<Time>, AbstractValue>();
-      envs.put(var, env);
-    }
-    return env;
-  }
 
   public void allocEnv(Var var, Time time, BindingEnv bindingEnv, Set<Object> val)
   {
     AbstractVar<Time> abstractVar = new AbstractVar<Time>(var, time);
     bindingEnv.extend(var.getName(), abstractVar);
-    Map<AbstractVar<Time>, AbstractValue> env = getEnv(var);
     AbstractValue current = env.get(abstractVar);
     if (current == null)
     {
@@ -518,14 +507,13 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
     else
     {
       // reallocing: weak
-      current.weakUpdate(val);
+      current.weakUpdate(val);  
     }
   }
 
   private AbstractVar<Time> updateEnv(Var var, BindingEnv bindingEnv, Set<Object> val)
   {
     AbstractVar<Time> abstractVar = lookupAddress(var, bindingEnv);
-    Map<AbstractVar<Time>, AbstractValue> env = getEnv(var);
     AbstractValue current = env.get(abstractVar);
     if (current == null)
     {
@@ -549,7 +537,6 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
   private Set<Object> lookupEnv(Var var, BindingEnv bindingEnv)
   {
     AbstractVar<Time> abstractVar = lookupAddress(var, bindingEnv);
-    Map<AbstractVar<Time>, AbstractValue> env = getEnv(var);
     AbstractValue abstractValue = env.get(abstractVar);
     if (abstractValue == null)
     {
@@ -560,39 +547,53 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
 
   public Set<Object> getMonoValues(Var var)
   {
-    Map<AbstractVar<Time>, AbstractValue> env = getEnv(var);
     Set<Object> mono = new HashSet<Object>();
-    for (AbstractValue av : env.values())
+    for (Object address : env.keySet())
     {
-      mono.addAll(av.mono(Object.class));
+      if (address instanceof AbstractVar)
+      {
+        AbstractVar abstractVar = (AbstractVar) address;
+        if (abstractVar.getVar().equals(var))
+        {
+          AbstractValue av = env.get(abstractVar);
+          mono.addAll(av.mono(Object.class));
+        }
+      }
     }
     return mono;
   }
 
   public Set<Object> getValues(Var var)
   {
-    Map<AbstractVar<Time>, AbstractValue> env = getEnv(var);
-    Set<Object> d = new HashSet<Object>();
-    for (AbstractValue av : env.values())
+    Set<Object> mono = new HashSet<Object>();
+    for (Object address : env.keySet())
     {
-      d.addAll(av.values(Object.class));
+      if (address instanceof AbstractVar)
+      {
+        AbstractVar abstractVar = (AbstractVar) address;
+        if (abstractVar.getVar().equals(var))
+        {
+          AbstractValue av = env.get(abstractVar);
+          mono.addAll(av.values(Object.class));
+        }
+      }
     }
-    return d;
+    return mono;
   }
   
-  public Set<AbstractVar<Time>> reachable(Set<AbstractVar<Time>> roots)
+  public Set<Object> reachable(Set<? extends Object> roots)
   {
-    Set<AbstractVar<Time>> reachable = new HashSet<AbstractVar<Time>>();
-    Deque<AbstractVar<Time>> todo = new ArrayDeque<AbstractVar<Time>>(roots);
+    Set<Object> reachable = new HashSet<Object>();
+    Deque<Object> todo = new ArrayDeque<Object>(roots);
     while (!todo.isEmpty())
     {
-      AbstractVar<Time> abstractVar = todo.pop();
-      if (reachable.contains(abstractVar))
+      Object address = todo.pop();
+      if (reachable.contains(address))
       {
         continue;
       }
-      reachable.add(abstractVar);
-      AbstractValue abstractValue = envs.get(abstractVar.getVar()).get(abstractVar);
+      reachable.add(address);
+      AbstractValue abstractValue = env.get(address);
       for (Object value : abstractValue.values(Object.class))
       {
         Set<AbstractVar<Time>> touches;
@@ -612,28 +613,25 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
   
   private void gc(BindingEnv bindingEnv, StackCont cont)
   {
-    Set<AbstractVar<Time>> reachable = reachable(bindingEnv.touches());
+    Set<Object> reachable = reachable(bindingEnv.touches());
     StackCont current = cont;
     while (current != null)
     {
-      Set<AbstractVar<Time>> roots = current.getBindingEnv().touches();
+      Set<? extends Object> roots = current.getBindingEnv().touches();
       reachable.addAll(reachable(roots));
       current = current.getPrevious();
     }
   //  System.out.println("reachable: " + reachable);
-    for (Map<AbstractVar<Time>, AbstractValue> env : envs.values())
-    {
-      Iterator<AbstractVar<Time>> iter = env.keySet().iterator();
+      Iterator<Object> iter = env.keySet().iterator();
       while (iter.hasNext())
       {
-        AbstractVar<Time> abstractVar = iter.next();
-        if (!reachable.contains(abstractVar))
+        Object address = iter.next();
+        if (!reachable.contains(address))
         {
 //          System.out.println("resetting " + abstractVar);
-          env.get(abstractVar).reset();
+          env.get(address).reset();
         }
       }
-    }
   }
 
   public static void main(String[] args)

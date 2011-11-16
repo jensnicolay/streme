@@ -445,7 +445,7 @@ public class SpParser2
       if (c == ';')
       {
         c = reader.read();
-        while (c != '\n')
+        while (c != '\n' && c != -1)
         {
           sb.append((char) c);
           c = reader.read();          
@@ -467,7 +467,7 @@ public class SpParser2
   
   public static void main(String[] args)
   {
-    String source = "(define a 1) (define b 2)";
+    String source = "(define a 1) (define b 2)\n; hhello\n;form me";
     SpParser2 spParser = new SpParser2(source);
     Object sp = spParser.next();
     System.out.println(sp);

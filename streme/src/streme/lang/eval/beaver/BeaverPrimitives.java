@@ -193,7 +193,7 @@ public class BeaverPrimitives
       Procedure calledWithCurrentContinuation = (Procedure) calledWithCc;
       return calledWithCurrentContinuation.apply1(new Procedure()
       {
-        public Callable<Callable> apply1(Object operand, LstEnv e, TSuccess k)
+        public Callable<Callable> apply1(Object operand, LstEnv e, TCont k)
         {
           return cont.call(operand);
         }
@@ -1470,7 +1470,7 @@ public class BeaverPrimitives
         {
           public Object call() throws Exception
           {
-            TSuccess.trampoline(proc.apply1(els[j], env, new TCont()
+            TCont.trampoline(proc.apply1(els[j], env, new TCont()
             {
               public Callable<Callable> call(Object val)
               {
@@ -1924,19 +1924,19 @@ public class BeaverPrimitives
               switch (args.length)
               {
                 case 0:
-                  TSuccess.trampoline(proc.apply0(env, rc));
+                  TCont.trampoline(proc.apply0(env, rc));
                   break;
                 case 1:
-                  TSuccess.trampoline(proc.apply1(args[0], env, rc));
+                  TCont.trampoline(proc.apply1(args[0], env, rc));
                   break;
                 case 2:
-                  TSuccess.trampoline(proc.apply2(args[0], args[1], env, rc));
+                  TCont.trampoline(proc.apply2(args[0], args[1], env, rc));
                   break;
                 case 3:
-                  TSuccess.trampoline(proc.apply3(args[0], args[1], args[2], env, rc));
+                  TCont.trampoline(proc.apply3(args[0], args[1], args[2], env, rc));
                   break;
                 default:
-                  TSuccess.trampoline(proc.applyN(args, env, rc));
+                  TCont.trampoline(proc.applyN(args, env, rc));
                   break;
               }
               return result[0];
