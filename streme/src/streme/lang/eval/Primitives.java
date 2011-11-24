@@ -3,7 +3,7 @@ package streme.lang.eval;
 import java.math.BigInteger;
 
 import streme.lang.StremeException;
-import streme.lang.data.BigRational;
+import streme.lang.data.Lst;
 import streme.lang.data.Null;
 import streme.lang.data.Pair;
 import streme.lang.data.Sym;
@@ -343,13 +343,17 @@ public class Primitives
     {
       clazz = Math.class;
     }
-    else if ("System".equals(name))
-    {
-      clazz = System.class;
-    }
     else if ("Runnable".equals(name))
     {
       clazz = Runnable.class;
+    }
+    else if ("Object".equals(name))
+    {
+      clazz = Object.class;
+    }
+    else if ("System".equals(name))
+    {
+      clazz = System.class;
     }
     else
     {
@@ -387,7 +391,37 @@ public class Primitives
 
   public static Object error(Object message)
   {
-    throw new StremeException(message.toString());
+    throw new StremeException("error: " + message);
+  }
+  
+  public static boolean vectorp(Object operand)
+  {
+    return operand instanceof Object[];
+  }
+
+  public static Lst append(Object operand)
+  {
+    return (Lst) operand;
+  }
+
+  public static Lst append(Object operand1, Object operand2)
+  {
+    return ((Lst) operand1).append((Lst)operand2);
+  }
+
+  public static Lst append(Object operand1, Object operand2, Object operand3)
+  {
+    return ((Lst) operand1).append((Lst) operand2).append((Lst) operand3);
+  }
+  
+  public static Lst append(Object[] operands)
+  {
+    Lst l = (Lst) operands[0];
+    for (int i = 1; i < operands.length; i++)
+    {
+      l = l.append((Lst) operands[i]);
+    }
+    return l;
   }
 
   private Primitives()

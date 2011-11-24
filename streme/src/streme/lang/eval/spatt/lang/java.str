@@ -1,0 +1,4 @@
+(define *unspecified* (Void/TYPE))
+
+(define-macro (implement classNames . body) 
+  `(proxy (map class-for-name '(,@classNames)) (list ,@(map (lambda (x) (list 'cons (list 'quote (car x)) (cadr x))) body))))

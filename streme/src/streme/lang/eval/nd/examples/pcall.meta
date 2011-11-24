@@ -1,0 +1,17 @@
+(define (list-of-applications? l)
+  (if (null? l)
+      #t
+      (and (application? (car l)) (list-of-applications? (cdr l)))))
+
+(define (parallelize-args ast)
+  (rewrite ast
+    (lambda (node)
+      (if (application? node)
+          (let ((operands (application-operands node)))
+            (if (and (>= (length operands) 2)
+                  (apply independent? operands)
+                  (list-of-applications? operands))
+                (create-application (create-ref 'pcall)
+                                    (cons (application-operator node) operands))
+                #f))
+          #f))))

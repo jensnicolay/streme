@@ -1,0 +1,210 @@
+
+
+;; ===
+
+(define (create-ast data)
+	(.compile (streme.lang.ast.impl.StremeSpDataCompiler2.) data))
+
+(define (children n)
+	(.children n))
+	
+(define (child? n p)
+	(memq n (children p)))
+	
+(define (create-from-children n c)
+  (.fromChildren n c))	
+	
+(define (parent n ast)
+	(call-with-current-continuation
+		(lambda (exit)
+			(let loop ((p ast))
+				(let ((cs (children p)))
+					(if (memq n cs)
+					    (exit p)
+				    	(for-each loop cs))))
+			  #f)))
+			  
+(define (nodes n)
+	(if (null? n)
+		'()
+		(if (pair? n)
+			(append (nodes (car n)) (nodes (cdr n)))
+			(cons n (nodes (children n))))))
+			
+(define (name-equals? name1 name2)
+	(equal? (.toString name1) (.toString name2)))  			
+			
+(define (create-constant value)
+	(streme.lang.ast.Literal. value streme.lang.ast.Literal$Kind/CONSTANT))
+		
+(define (literal? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/LITERAL))
+	
+(define (literal-value literal)
+	(.getValue literal))
+
+(define (create-var name)
+	(streme.lang.ast.Var. name))			
+			
+(define (var? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/VAR))
+	
+(define (var-name var)
+	(.getName var))
+			
+(define (vars-with-name name ast)
+	(filter (lambda (node) (and (var? node) (name-equals? (var-name node) name))) (nodes ast)))
+
+(define (create-ref name)
+	(streme.lang.ast.Ref. name))
+
+(define (ref? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/REF))
+	
+(define (ref-name ref)
+	(.getName ref))
+			
+(define (refs-with-name name ast)
+	(filter (lambda (node) (and (ref? node) (name-equals? (ref-name node) name))) (nodes ast)))
+
+(define (let? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/LET))
+	
+(define (let-kind let)
+	(.getKind let))	
+	
+(define (let-kind-let? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LET))
+	
+(define (let-kind-let*? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETSTAR))
+	
+(define (let-kind-letrec? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETREC))
+	
+(define (let-kind-letpar? let)
+	(eq? (let-kind let) streme.lang.ast.Let$Kind/LETPAR))
+	
+(define (let-bindings let)
+	(vector->list (.getBindings let)))
+	
+(define (binding? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/BINDING))
+	
+(define (binding-var binding)
+	(.getVar binding))
+	
+(define (binding-value binding)
+	(.getValue binding))
+
+(define (define? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/DEFINE))
+
+(define (define-var define)
+	(.getVar define))
+	
+(define (define-value define)
+	(.getValue define))
+	
+(define (create-set var value)
+	(streme.lang.ast.SetVar. var value))
+	
+(define (set? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/SETVAR))
+
+(define (set-var define)
+	(.getVar define))
+	
+(define (set-value define)
+	(.getValue define))
+	
+(define (lambda? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/LAMBDA))
+		
+(define (lambda-params lambda)
+	(vector->list (.getParams lambda)))
+
+(define (lambda-body lambda)
+	(.getBody lambda))
+
+(define (begin? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/BEGIN))
+
+(define (begin-expressions begin)
+	(vector->list (.getExps begin)))
+
+(define (application? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/APPLICATION))
+
+(define (application-operator application)
+	(.getOperator application))
+
+(define (application-operands application)
+	(vector->list (.getOperands application)))
+
+(define (if? node)
+	(eq? (.type node) streme.lang.ast.Node$Type/IF))
+
+(define (if-condition if)
+	(.getCondition if))
+
+(define (if-consequent if)
+	(.getConsequent if))
+
+(define (if-alternate if)
+	(.getAlternate if))
+
+
+;; === lexical scoping
+
+(define (vars-in-scope n ast)
+	(let ((p (parent n ast)))
+		(if p
+			(append
+				(cond
+					((let? p)
+					 	(if (binding? n)
+					     	(cond
+				    	 		((let-kind-let*? p)
+				     		 	 (let loop ((bs (let-bindings p))
+				     	    	            (acc '()))
+					     	   		(if (pair? bs)
+					     	       		(if (.nodeEquals (car bs) n)
+					     	           		(map binding-var acc)
+				    	 	           		(loop (cdr bs) (cons (car bs) acc))))))
+					     		((let-kind-letrec? p)
+					     	 	 (map binding-var (let-bindings p)))
+					     		(else '()))
+					     	(map binding-var (let-bindings p))))
+					 ((define? p)
+					  (list (define-var p)))
+					 ((lambda? p)
+					  (lambda-params p))
+					 (else '()))
+				(vars-in-scope p ast))
+			(map define-var (filter define? (nodes ast)))))) ; bug: (begin (define ...) ...)
+			
+(define (lookup-var-name name n ast)
+	(let ((vars (filter (lambda (var) (name-equals? var name)) (vars-in-scope n ast))))
+		(if (null? vars)
+			#f
+			(car vars))))
+			
+(define (lookup-ref-var ref ast)
+	(lookup-var-name (ref-name ref) ref ast))
+			
+(define (lookup-set-var set ast)
+	(lookup-var-name (var-name (set-var set)) set ast))
+			
+(define (lookup-var-refs var ast)
+	(filter (lambda (n)
+				(and (ref? n) (eq? (lookup-ref-var n ast) var)))
+		    (nodes ast)))
+		
+(define (lookup-var-sets var ast)
+	(filter (lambda (n)
+				(and (set? n) (eq? (lookup-set-var n ast) var)))
+		    (nodes ast)))
+
+;; ===
+

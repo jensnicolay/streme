@@ -1,0 +1,25 @@
+(define (vars-in-scope n ast)
+	(let ((p (parent n ast)))
+		(if p
+			(cons
+				(cond
+					((let? p)
+					 	(if (binding? n)
+					     	(cond
+				    	 		((let-kind-let*? p)
+				     		 	 (let loop ((bs (let-bindings p))
+				     	    	            (acc '()))
+					     	   		(if (pair? bs)
+					     	       		(if (.nodeEquals (car bs) n)
+					     	           		(map binding-var acc)
+				    	 	           		(loop (cdr bs) (cons (car bs) acc))))))
+					     		((let-kind-letrec? p)
+					     	 	 (map binding-var (let-bindings p)))
+					     		(else '()))
+					     	(map binding-var (let-bindings p)))
+					 ((define? p)
+					  (define-var p))
+					 ((lambda? p)
+					  (lambda-params p))
+					 (else '())))
+				(vars-in-scope p ast)))))

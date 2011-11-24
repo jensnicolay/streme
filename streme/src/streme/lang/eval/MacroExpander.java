@@ -456,6 +456,10 @@ public class MacroExpander implements DataRewriter
     else
     {
       Lst bindings = (Lst) pair.car();
+      if (pair.cdr() instanceof Null)
+      {
+        throw new StremeException("no body for let with bindings " + bindings);
+      }
       Pair body = (Pair) pair.cdr();
       if (rewriteLet)
       {

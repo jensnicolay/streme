@@ -273,7 +273,7 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
         }
         // register read dependency
         StackCont currentCont = cont;
-        Time bindingTime = lookupAddress(var, bindingEnv).getContext();
+        AbstractVar<Time> address = lookupAddress(var, bindingEnv);
         while (currentCont != null)
         {
           Set<Application> applicationMarks = currentCont.getApplicationMarks();
@@ -285,7 +285,7 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
               reads = new HashSet<AbstractVar<Time>>();
               StatefulIpdAnalyzer.this.reads.put(application, reads);
             }
-            reads.add(new AbstractVar<Time>(var, bindingTime));
+            reads.add(address);
           }
           currentCont = currentCont.getPrevious();
         }
@@ -426,8 +426,8 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
             {
               throw new StremeException("undefined variable " + setVar.getVar());
             }
-            Time bindingTime = updateEnv(var, bindingEnv, state.getValues()).getContext();
             // register write dependency
+            AbstractVar<Time> address = updateEnv(var, bindingEnv, state.getValues());
             StackCont currentCont = cont;
             while (currentCont != null)
             {
@@ -440,7 +440,7 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
                   writes = new HashSet<AbstractVar<Time>>();
                   StatefulIpdAnalyzer.this.writes.put(application, writes);
                 }
-                writes.add(new AbstractVar<Time>(var, bindingTime));
+                writes.add(address);
               }
               currentCont = currentCont.getPrevious();
             }
@@ -622,28 +622,29 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
       current = current.getPrevious();
     }
   //  System.out.println("reachable: " + reachable);
-      Iterator<Object> iter = env.keySet().iterator();
-      while (iter.hasNext())
+    Iterator<Object> iter = env.keySet().iterator();
+    while (iter.hasNext())
+    {
+      Object address = iter.next();
+      if (!reachable.contains(address))
       {
-        Object address = iter.next();
-        if (!reachable.contains(address))
-        {
-//          System.out.println("resetting " + abstractVar);
-          env.get(address).reset();
-        }
+//      System.out.println("resetting " + abstractVar);
+        env.get(address).reset();
       }
+    }
   }
 
   public static void main(String[] args)
   {
     // String source = "(letrec ((fib (lambda (n) (if (< n 2) n (+ (fib (- n 2)) (fib (- n 1))))))) (fib 4))";
-    // String source = "(begin (define z 123) (define f (lambda () z)) (f) (f))";
+//    String source = "(begin (define z 123) (define f (lambda () z)) (f) (f))";
     // String source = "(begin (define counter (lambda (c) (if (zero? c) 'boem (counter (- c 1))))) (counter 2))";
     // String source =
     // "(letrec ((fib (lambda (n) (if (< n 2) n (let ((a (fib (- n 1))) (b (fib (- n 2)))) (+ a b)))))) (fib 3))";
     // String source = "(let* ((z 0) (writez (lambda () (set! z 123))) (readz (lambda () z))) (cons (writez) (readz)))";
 //    String source = "(begin (define f (lambda (x) x)) (f 123))";
-    String source = "(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))";
+//    String source = "(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))";
+    String source = "(begin 1 2 3)";
     Parser2 parser = new Parser2();
     Object data = parser.parse(source);
     StremeDataCompiler compiler = new StremeDataCompiler();
@@ -656,13 +657,5 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
     System.out.println(ipda.getResult());
     System.out.println(ipda.getReads());
     System.out.println(ipda.getWrites());
-    
-    NdAnalysisStreme querier = new NdAnalysisStreme(ast);
-    Application app = (Application) querier.queryNode("(an-application-with-operator (a-ref-with-name 'append))");
-    System.out.println(ipda.getReads().get((Application) app.getOperands()[0]));
-    System.out.println(ipda.getReads().get((Application) app.getOperands()[1]));
-    System.out.println(ipda.getWrites().get((Application) app.getOperands()[0]));
-    System.out.println(ipda.getWrites().get((Application) app.getOperands()[1]));
-
   }
 }

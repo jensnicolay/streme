@@ -1,4 +1,4 @@
-package streme.lang.eval.beaver;
+package streme.lang.eval.spatt;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,14 +29,8 @@ import streme.lang.eval.LstEnv;
 import streme.lang.eval.MethodUtils;
 import streme.lang.eval.Primitives;
 import streme.lang.eval.tanfe.StremeContext;
-import ftree.Deep;
-import ftree.FTree;
-import ftree.Mapper;
-import ftree.Measure;
-import ftree.Predicate;
-import ftree.Single;
 
-public class BeaverPrimitives
+public class SpattPrimitives
 {
   public static void loadPrimitives(LstEnv env, StremeContext context)
   {
@@ -56,30 +50,34 @@ public class BeaverPrimitives
     env.add(new Sym("current-environment"), new CurrentEnvironment());
     env.add(new Sym("unify"), new Unify());
     env.add(new Sym("sleep"), new Sleep());
+    env.add(new Sym("error"), new Error());
     // env.add(new Sym("serializer"), new Serializer_());
     // env.add(new Sym("serial"), new Serial());
     // env.add(new Sym("yield"), new Yield());
-    env.add(new Sym("tree"), new Tree(context));
-    env.add(new Sym("equip"), new Equip());
-    env.add(new Sym("list->tree"), new List2Tree());
-    env.add(new Sym("split"), new Split());
-    env.add(new Sym("tree?"), new TreeP());
-    env.add(new Sym("empty?"), new EmptyP());
-    env.add(new Sym("singleton?"), new SingletonP());
-    env.add(new Sym("deep?"), new DeepP());
-    env.add(new Sym("left"), new Left());
-    env.add(new Sym("right"), new Right());
-    env.add(new Sym("lefttail"), new LeftTail());
-    env.add(new Sym("righttail"), new RightTail());
-    env.add(new Sym("addleft"), new AddLeft());
-    env.add(new Sym("addright"), new AddRight());
-    env.add(new Sym("conc"), new Conc());
-    env.add(new Sym("cached"), new Cached());
-    env.add(new Sym("tmap"), new TMap(context));
-    env.add(new Sym("tpsum"), new TPSum());
-    env.add(new Sym("tppsum"), new TPPSum(context.executor()));
-    env.add(new Sym("lpsum"), new LPSum());
-    env.add(new Sym("lpsum-array"), new LPSumArray());
+    
+    /* finger tree primitives */
+//    env.add(new Sym("tree"), new Tree(context));
+//    env.add(new Sym("equip"), new Equip());
+//    env.add(new Sym("list->tree"), new List2Tree());
+//    env.add(new Sym("split"), new Split());
+//    env.add(new Sym("tree?"), new TreeP());
+//    env.add(new Sym("empty?"), new EmptyP());
+//    env.add(new Sym("singleton?"), new SingletonP());
+//    env.add(new Sym("deep?"), new DeepP());
+//    env.add(new Sym("left"), new Left());
+//    env.add(new Sym("right"), new Right());
+//    env.add(new Sym("lefttail"), new LeftTail());
+//    env.add(new Sym("righttail"), new RightTail());
+//    env.add(new Sym("addleft"), new AddLeft());
+//    env.add(new Sym("addright"), new AddRight());
+//    env.add(new Sym("conc"), new Conc());
+//    env.add(new Sym("cached"), new Cached());
+//    env.add(new Sym("tmap"), new TMap(context));
+//    env.add(new Sym("tpsum"), new TPSum());
+//    env.add(new Sym("tppsum"), new TPPSum(context.executor()));
+//    env.add(new Sym("lpsum"), new LPSum());
+//    env.add(new Sym("lpsum-array"), new LPSumArray());
+    
     /* R5RS primitives */
     env.add(new Sym("call-with-current-continuation"), new CallWithCurrentContinuation());
     env.add(new Sym("call/cc"), new CallWithCurrentContinuation());
@@ -109,6 +107,8 @@ public class BeaverPrimitives
     env.add(new Sym("assoc"), new Assoc());
     env.add(new Sym("assq"), new Assq());
     env.add(new Sym("memv"), new Memv());
+    env.add(new Sym("memq"), new Memq());
+    env.add(new Sym("member"), new Member());
     env.add(new Sym("member"), new Member());
     env.add(new Sym("append"), new Append());
     env.add(new Sym("map||"), new PMap(context.executor()));
@@ -140,6 +140,7 @@ public class BeaverPrimitives
     env.add(new Sym("vector-length"), new VectorLength());
     env.add(new Sym("make-vector"), new MakeVector());
     env.add(new Sym("vector"), new Vector());
+    env.add(new Sym("vector?"), new VectorP());
     env.add(new Sym("zero?"), new IZeroP());
     env.add(new Sym("Izero?"), new IIZeroP());
     env.add(new Sym("even?"), new IEvenP());
@@ -186,6 +187,14 @@ public class BeaverPrimitives
 
   public static final Integer IZERO = Integer.valueOf(0);
 
+  public static final class Error extends Procedure
+  {
+    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.error(operand));
+    }
+  }
+  
   public static final class CallWithCurrentContinuation extends Procedure
   {
     public Callable<Callable> apply1(Object calledWithCc, final LstEnv env, final TCont cont)
@@ -895,29 +904,29 @@ public class BeaverPrimitives
     }
   }
 
-  public static final class EmptyP extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).isEmpty());
-    }
-  }
-
-  public static final class SingletonP extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(operand instanceof Single);
-    }
-  }
-
-  public static final class DeepP extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(operand instanceof Deep);
-    }
-  }
+//  public static final class EmptyP extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).isEmpty());
+//    }
+//  }
+//
+//  public static final class SingletonP extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(operand instanceof Single);
+//    }
+//  }
+//
+//  public static final class DeepP extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(operand instanceof Deep);
+//    }
+//  }
 
   public static final class EqP extends Procedure
   {
@@ -1027,163 +1036,163 @@ public class BeaverPrimitives
     }
   }
 
-  public static final class Conc extends Procedure
-  {
-    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand1).append((FTree) operand2));
-    }
-  }
+//  public static final class Conc extends Procedure
+//  {
+//    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand1).append((FTree) operand2));
+//    }
+//  }
+//
+//  public static final class Cached extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).cached());
+//    }
+//  }
+//
+//  public static final class TPSum extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object tree, LstEnv env, TCont cont)
+//    {
+//      FTree t = (FTree) tree;
+//      final Measure m = t.measure();
+//      return cont.call(t.psum());
+//    }
+//  }
+//
+//  public static final class LPSum extends Procedure
+//  {
+//    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
+//    {
+//      Object empty = operands[0];
+//      Procedure sum = (Procedure) operands[1];
+//      Procedure measure = (Procedure) operands[2];
+//      Lst l = (Lst) operands[3];
+//      final Measure m = createMeasure(empty, sum, measure, env);
+//      Object i = m.empty();
+//      Lst resultL = Lst.valueOf(i);
+//      for (Object o : l)
+//      {
+//        i = m.sum(m.measure(o), i);
+//        resultL = Pair.cons(i, resultL);
+//      }
+//      resultL = resultL.reverse();
+//      return cont.call(resultL);
+//    }
+//  }
+//
+//  public static final class LPSumArray extends Procedure
+//  {
+//    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
+//    {
+//      Object empty = operands[0];
+//      Procedure sum = (Procedure) operands[1];
+//      Procedure measure = (Procedure) operands[2];
+//      Lst l = (Lst) operands[3];
+//      final Measure m = createMeasure(empty, sum, measure, env);
+//      Object i = m.empty();
+//      java.util.List result = new ArrayList();
+//      result.add(i);
+//      for (Object o : l)
+//      {
+//        i = m.sum(m.measure(o), i);
+//        result.add(i);
+//      }
+//      return cont.call(Lst.valueOf(result));
+//    }
+//  }
+//
+//  public static final class TPPSum extends Procedure
+//  {
+//    private ExecutorService executor;
+//
+//    public TPPSum(ExecutorService executor)
+//    {
+//      super();
+//      this.executor = executor;
+//    }
+//
+//    public Callable<Callable> apply1(Object tree, LstEnv env, TCont cont)
+//    {
+//      FTree t = (FTree) tree;
+//      final Measure m = t.measure();
+//      return cont.call(t.ppsum(executor));
+//    }
+//  }
+//
+//  public static final class TMap extends Procedure
+//  {
+//    private StremeContext context;
+//
+//    public TMap(StremeContext context)
+//    {
+//      super();
+//      this.context = context;
+//    }
+//
+//    public Callable<Callable> apply2(Object tree, final Object mapProc, final LstEnv env, TCont cont)
+//    {
+//      FTree t = (FTree) tree;
+//      t = t.map(t.measure(), new Mapper()
+//      {
+//        public Object map(Object v)
+//        {
+//          return javaApply1((Procedure) mapProc, v, env);
+//        }
+//      });
+//      return cont.call(t);
+//    }
+//  }
 
-  public static final class Cached extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).cached());
-    }
-  }
-
-  public static final class TPSum extends Procedure
-  {
-    public Callable<Callable> apply1(Object tree, LstEnv env, TCont cont)
-    {
-      FTree t = (FTree) tree;
-      final Measure m = t.measure();
-      return cont.call(t.psum());
-    }
-  }
-
-  public static final class LPSum extends Procedure
-  {
-    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
-    {
-      Object empty = operands[0];
-      Procedure sum = (Procedure) operands[1];
-      Procedure measure = (Procedure) operands[2];
-      Lst l = (Lst) operands[3];
-      final Measure m = createMeasure(empty, sum, measure, env);
-      Object i = m.empty();
-      Lst resultL = Lst.valueOf(i);
-      for (Object o : l)
-      {
-        i = m.sum(m.measure(o), i);
-        resultL = Pair.cons(i, resultL);
-      }
-      resultL = resultL.reverse();
-      return cont.call(resultL);
-    }
-  }
-
-  public static final class LPSumArray extends Procedure
-  {
-    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
-    {
-      Object empty = operands[0];
-      Procedure sum = (Procedure) operands[1];
-      Procedure measure = (Procedure) operands[2];
-      Lst l = (Lst) operands[3];
-      final Measure m = createMeasure(empty, sum, measure, env);
-      Object i = m.empty();
-      java.util.List result = new ArrayList();
-      result.add(i);
-      for (Object o : l)
-      {
-        i = m.sum(m.measure(o), i);
-        result.add(i);
-      }
-      return cont.call(Lst.valueOf(result));
-    }
-  }
-
-  public static final class TPPSum extends Procedure
-  {
-    private ExecutorService executor;
-
-    public TPPSum(ExecutorService executor)
-    {
-      super();
-      this.executor = executor;
-    }
-
-    public Callable<Callable> apply1(Object tree, LstEnv env, TCont cont)
-    {
-      FTree t = (FTree) tree;
-      final Measure m = t.measure();
-      return cont.call(t.ppsum(executor));
-    }
-  }
-
-  public static final class TMap extends Procedure
-  {
-    private StremeContext context;
-
-    public TMap(StremeContext context)
-    {
-      super();
-      this.context = context;
-    }
-
-    public Callable<Callable> apply2(Object tree, final Object mapProc, final LstEnv env, TCont cont)
-    {
-      FTree t = (FTree) tree;
-      t = t.map(t.measure(), new Mapper()
-      {
-        public Object map(Object v)
-        {
-          return javaApply1((Procedure) mapProc, v, env);
-        }
-      });
-      return cont.call(t);
-    }
-  }
-
-  public static final class Left extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).leftHead());
-    }
-  }
-
-  public static final class LeftTail extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).leftTail());
-    }
-  }
-
-  public static final class AddLeft extends Procedure
-  {
-    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand1).addLeft(operand2));
-    }
-  }
-
-  public static final class Right extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).rightHead());
-    }
-  }
-
-  public static final class AddRight extends Procedure
-  {
-    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand1).addRight(operand2));
-    }
-  }
-
-  public static final class RightTail extends Procedure
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(((FTree) operand).rightTail());
-    }
-  }
+//  public static final class Left extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).leftHead());
+//    }
+//  }
+//
+//  public static final class LeftTail extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).leftTail());
+//    }
+//  }
+//
+//  public static final class AddLeft extends Procedure
+//  {
+//    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand1).addLeft(operand2));
+//    }
+//  }
+//
+//  public static final class Right extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).rightHead());
+//    }
+//  }
+//
+//  public static final class AddRight extends Procedure
+//  {
+//    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand1).addRight(operand2));
+//    }
+//  }
+//
+//  public static final class RightTail extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(((FTree) operand).rightTail());
+//    }
+//  }
 
   public static final class Cons extends Procedure
   {
@@ -1249,109 +1258,109 @@ public class BeaverPrimitives
     return result[0];
   }
 
-  private static Measure createMeasure(final Object empty, final Procedure s, final Procedure m, final LstEnv env)
-  {
-    Measure mm = new Measure()
-    {
-      public Object measure(Object t)
-      {
-        return javaApply1(m, t, env);
-      }
+//  private static Measure createMeasure(final Object empty, final Procedure s, final Procedure m, final LstEnv env)
+//  {
+//    Measure mm = new Measure()
+//    {
+//      public Object measure(Object t)
+//      {
+//        return javaApply1(m, t, env);
+//      }
+//
+//      public Object empty()
+//      {
+//        return empty;
+//      }
+//
+//      public Object sum(Object a, Object b)
+//      {
+//        final Object[] result = new Object[1];
+//        return javaApply2(s, a, b, env);
+//      }
+//    };
+//    return mm;
+//  }
 
-      public Object empty()
-      {
-        return empty;
-      }
-
-      public Object sum(Object a, Object b)
-      {
-        final Object[] result = new Object[1];
-        return javaApply2(s, a, b, env);
-      }
-    };
-    return mm;
-  }
-
-  public static final class Tree extends Procedure
-  {
-    private StremeContext context;
-
-    public Tree(StremeContext context)
-    {
-      super();
-      this.context = context;
-    }
-
-    public Callable<Callable> apply0(LstEnv env, TCont cont)
-    {
-      return cont.call(FTree.treeOf());
-    }
-
-    public Callable<Callable> apply3(final Object empty, Object sum, Object measure, final LstEnv env, TCont cont)
-    {
-      final Procedure m = (Procedure) measure;
-      final Procedure s = (Procedure) sum;
-      Measure mm = createMeasure(empty, s, m, env);
-      return cont.call(FTree.treeOf(mm));
-    }
-
-    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
-    {
-      return cont.call(FTree.treeOf(Measure.size(), operands));
-    }
-  }
-
-  public static final class Split extends Procedure
-  {
-    public Callable<Callable> applyN(Object[] operands, final LstEnv env, TCont cont)
-    {
-      FTree tree = (FTree) operands[0];
-      final Procedure predicate = (Procedure) operands[1];
-      Object initial = operands[2];
-      Procedure receiver = (Procedure) operands[3];
-      ftree.Split split = tree.split(new Predicate()
-      {
-        public boolean apply(Object v)
-        {
-          return javaApply1(predicate, v, env) == Boolean.FALSE ? false : true;
-        }
-      }, initial);
-      if (split == null)
-      {
-        return receiver.apply2(tree, tree.clear(), env, cont);
-      }
-      else
-      {
-        return receiver.apply2(split.getLeft(), split.getRight().addLeft(split.getCenter()), env, cont);
-      }
-    }
-  }
-
-  public static final class Equip extends Procedure
-  {
-    public Callable<Callable> apply2(Object t, Object protoTree, final LstEnv env, TCont cont)
-    {
-      FTree tree = ((FTree) protoTree).clear();
-      for (Object o : (FTree) t)
-      {
-        tree = tree.addRight(o);
-      }
-      return cont.call(tree);
-    }
-  }
-
-  public static final class List2Tree extends Procedure
-  {
-    public Callable<Callable> apply1(Object iterable, final LstEnv env, TCont cont)
-    {
-      return cont.call(FTree.fromIterable(Measure.nil(), (Iterable) iterable));
-    }
-
-    public Callable<Callable> apply2(Object iterable, Object proto, final LstEnv env, TCont cont)
-    {
-      return cont.call(FTree.fromIterable(((FTree) proto).measure(), (Iterable) iterable));
-    }
-  }
+//  public static final class Tree extends Procedure
+//  {
+//    private StremeContext context;
+//
+//    public Tree(StremeContext context)
+//    {
+//      super();
+//      this.context = context;
+//    }
+//
+//    public Callable<Callable> apply0(LstEnv env, TCont cont)
+//    {
+//      return cont.call(FTree.treeOf());
+//    }
+//
+//    public Callable<Callable> apply3(final Object empty, Object sum, Object measure, final LstEnv env, TCont cont)
+//    {
+//      final Procedure m = (Procedure) measure;
+//      final Procedure s = (Procedure) sum;
+//      Measure mm = createMeasure(empty, s, m, env);
+//      return cont.call(FTree.treeOf(mm));
+//    }
+//
+//    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
+//    {
+//      return cont.call(FTree.treeOf(Measure.size(), operands));
+//    }
+//  }
+//
+//  public static final class Split extends Procedure
+//  {
+//    public Callable<Callable> applyN(Object[] operands, final LstEnv env, TCont cont)
+//    {
+//      FTree tree = (FTree) operands[0];
+//      final Procedure predicate = (Procedure) operands[1];
+//      Object initial = operands[2];
+//      Procedure receiver = (Procedure) operands[3];
+//      ftree.Split split = tree.split(new Predicate()
+//      {
+//        public boolean apply(Object v)
+//        {
+//          return javaApply1(predicate, v, env) == Boolean.FALSE ? false : true;
+//        }
+//      }, initial);
+//      if (split == null)
+//      {
+//        return receiver.apply2(tree, tree.clear(), env, cont);
+//      }
+//      else
+//      {
+//        return receiver.apply2(split.getLeft(), split.getRight().addLeft(split.getCenter()), env, cont);
+//      }
+//    }
+//  }
+//
+//  public static final class Equip extends Procedure
+//  {
+//    public Callable<Callable> apply2(Object t, Object protoTree, final LstEnv env, TCont cont)
+//    {
+//      FTree tree = ((FTree) protoTree).clear();
+//      for (Object o : (FTree) t)
+//      {
+//        tree = tree.addRight(o);
+//      }
+//      return cont.call(tree);
+//    }
+//  }
+//
+//  public static final class List2Tree extends Procedure
+//  {
+//    public Callable<Callable> apply1(Object iterable, final LstEnv env, TCont cont)
+//    {
+//      return cont.call(FTree.fromIterable(Measure.nil(), (Iterable) iterable));
+//    }
+//
+//    public Callable<Callable> apply2(Object iterable, Object proto, final LstEnv env, TCont cont)
+//    {
+//      return cont.call(FTree.fromIterable(((FTree) proto).measure(), (Iterable) iterable));
+//    }
+//  }
 
   public static final class ImproperList extends Procedure
   {
@@ -1488,14 +1497,24 @@ public class BeaverPrimitives
 
   public static final class Append extends Procedure
   {
+    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.append(operand));
+    }
+    
     public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
     {
-      return cont.call(((Lst) operand1).append((Lst) operand2));
+      return cont.call(Primitives.append(operand1, operand2));
     }
 
     public Callable<Callable> apply3(Object operand1, Object operand2, Object operand3, LstEnv env, TCont cont)
     {
-      return cont.call(((Lst) operand1).append((Lst) operand2).append((Lst) operand3));
+      return cont.call(Primitives.append(operand1, operand2, operand3));
+    }
+    
+    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.append(operands));
     }
   }
 
@@ -1503,16 +1522,15 @@ public class BeaverPrimitives
   {
     public Callable<Callable> apply2(Object candidate, Object list, LstEnv env, TCont cont)
     {
-      while (!(list instanceof Null))
-      {
-        Pair p = (Pair) list;
-        if (Primitives.eqv(candidate, p.car()))
-        {
-          return cont.call(list);
-        }
-        list = p.cdr();
-      }
-      return cont.call(Boolean.FALSE);
+      return cont.call(Primitives.memv(candidate, list));
+    }
+  }
+
+  public static final class Memq extends Procedure
+  {
+    public Callable<Callable> apply2(Object candidate, Object list, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.memq(candidate, list));
     }
   }
 
@@ -1520,16 +1538,7 @@ public class BeaverPrimitives
   {
     public Callable<Callable> apply2(Object candidate, Object list, LstEnv env, TCont cont)
     {
-      while (!(list instanceof Null))
-      {
-        Pair p = (Pair) list;
-        if (Primitives.equal(candidate, p.car()))
-        {
-          return cont.call(list);
-        }
-        list = p.cdr();
-      }
-      return cont.call(Boolean.FALSE);
+      return cont.call(Primitives.member(candidate, list));
     }
   }
 
@@ -1744,7 +1753,7 @@ public class BeaverPrimitives
           }
           catch (NoSuchFieldException nsfe)
           {
-            throw new StremeException("no such method or field: " + instanceMember, nsfe);
+            throw new StremeException(instanceMember + ": no such method or field on " + instance, nsfe);
           }
         }
       }
@@ -1980,13 +1989,13 @@ public class BeaverPrimitives
     }
   }
 
-  public static final class TreeP extends Procedure// UNTESTED
-  {
-    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
-    {
-      return cont.call(operand instanceof FTree);
-    }
-  }
+//  public static final class TreeP extends Procedure// UNTESTED
+//  {
+//    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+//    {
+//      return cont.call(operand instanceof FTree);
+//    }
+//  }
 
   public static final class Car extends Procedure
   {
@@ -2306,12 +2315,12 @@ public class BeaverPrimitives
       try
       {
         reader = new InputStreamReader(getClass().getResourceAsStream(operand.toString()));
+        return load(reader, cont);
       }
       catch (Exception e)
       {
         throw new StremeException("error loading " + operand, e);
       }
-      return load(reader, cont);
     }
 
     private Callable<Callable> load(final Reader reader, final TCont cont)
@@ -2394,6 +2403,15 @@ public class BeaverPrimitives
     }
   }
 
+  public static final class VectorP extends Procedure
+  {
+    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.vectorp(operand));
+    }
+  }
+
+  
   public static final class Vector extends Procedure
   {
     public Callable<Callable> apply0(Object operand, LstEnv env, TCont cont)
@@ -2580,7 +2598,7 @@ public class BeaverPrimitives
   // return cont.call(Void.TYPE);
   // }
   // }
-  private BeaverPrimitives()
+  private SpattPrimitives()
   {
     super();
   }

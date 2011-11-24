@@ -168,7 +168,7 @@ public class StremeDataCompiler implements AstDataCompiler
       alternateCompiled = compile(pair3.car());
       if (!(pair3.cdr() instanceof Null))
       {
-        throw new StremeException("if: illegal syntax: " + pair);
+        throw new StremeException("if: more than 2 branches: " + pair);
       }
     }
     

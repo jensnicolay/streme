@@ -1,0 +1,430 @@
+
+(define (d exp . messages)
+	(display messages) (display '==>) (display exp) (newline) exp)
+
+(define *any* (Object.))
+
+(define (create-lset . els)
+	els)
+	
+(define (add-lset el s)
+	(if (member el s)
+		s
+		(cons el s)))
+		
+(define (add-all-lset els s)
+	(if (null? els)
+		s
+		(add-all-lset (cdr els) (add-lset (car els) s))))
+				
+(define (union-lset ls1 ls2)
+	(add-all-lset ls1 ls2))
+	
+(define (member-lset? el s)
+	(member el s))
+
+(define (create-lsetmap)
+	'())
+	
+(define (put-lsetmap key value lsetmap)
+	(if (null? lsetmap)
+		(list (cons key (create-lset value)))
+		(let ((entry (car lsetmap)))
+				(if (equal? (car entry) key)
+					(cons (cons key (add-lset value (cdr entry))) (cdr lsetmap))
+					(cons entry (put-lsetmap key value (cdr lsetmap)))))))
+
+(define (get-lsetmap key lsetmap)
+	(let ((entry (assoc key lsetmap)))
+		(if entry
+			(cdr entry)
+			'())))
+			
+(define (perm l)
+  (if (null? (cdr l))
+      (map list (car l))
+      (let ((rest (perm (cdr l))))
+        (apply append (map (lambda (x)
+                             (map (lambda (y)
+                                    (cons x y))
+                                  rest))
+                           (car l))))))
+			
+(define (create-time)
+	'())
+	
+(define (tick-time value k time)
+	(let ((result (append time (list value))))
+		(if (> (length result) k)
+			(cdr result)
+			result))) 
+	   
+(define (create-avar var time)
+	(cons var time))
+	
+(define (avar-var avar)
+	(car avar))
+	
+(define (avar-time avar)
+	(cdr avar))
+	
+(define (%create-aval values fresh mono)
+	(vector values fresh mono))
+	
+(define (create-aval values)
+	(%create-aval values #t values))
+	
+(define (aval-values aval)
+	(vector-ref aval 0))
+	
+(define (aval-fresh? aval)
+	(vector-ref aval 1))
+	
+(define (aval-mono aval)
+	(vector-ref aval 2))
+	
+(define (update-aval values aval)
+	(if (aval-fresh? aval)
+		(strong-update-aval values aval)
+		(weak-update-aval values aval)))
+		
+(define (weak-update-aval values aval)
+	(%create-aval (union-lset values (aval-values aval)) #f (union-lset values (aval-mono aval))))
+	
+(define (strong-update-aval values aval)
+	(%create-aval values (aval-fresh? aval) (union-lset values (aval-mono aval))))
+	   	   
+(define (create-benv)
+	'())
+	
+(define (lookup-benv name benv)
+	(let ((entry (assoc name benv)))
+		(if entry
+			(cdr entry)
+			(error (String/format "no binding for name %1s" (vector name))))))
+	
+(define (extend-benv name address benv)
+	(cons (cons name address) benv))
+	
+(define (touches-benv benv)
+	(map cdr benv))
+	
+(define (create-store)
+	'())
+	
+(define (lookup-store address store)
+	(let ((entry (assoc address store)))
+		(if entry
+			(aval-values (cdr entry))
+			(error (String/format "no value at address %1s" (vector address))))))
+	
+(define (alloc-store address values store)
+	(if (null? store)
+		(list (cons address (create-aval values)))
+		(let ((entry (car store)))
+			(if (equal? (car entry) address)
+				(cons (aval-weak-update values (cdr entry)) (cdr store))
+				(cons entry (alloc-store address values (cdr store)))))))
+			
+(define (update-store address values store)
+	(if (null? store)
+		(error (String/format "cannot update address %1s" (vector address)))
+		(let ((entry (car store)))
+			(if (equal? (car entry) address)
+				(cons (cons (car entry) (update-aval values (cdr entry))) (cdr store))
+				(cons entry (update-store address values (cdr store)))))))
+				
+(define (keep-all-store addresses store)
+	(if (null? store)
+		'()
+		(let ((entry (car store)))
+			(if (member (car entry) addresses)
+				(cons entry (keep-all-store addresses (cdr store)))
+				(keep-all-store addresses (cdr store))))))
+	
+(define (%create-cont previous benv applications proc)
+	(vector previous benv applications proc))
+	
+(define (create-cont previous benv proc)
+	(%create-cont previous benv '() proc))
+	
+(define (cont-previous cont)
+	(vector-ref cont 0))
+	
+(define (cont-benv cont)
+	(vector-ref cont 1))
+	
+(define (cont-applications cont)
+	(vector-ref cont 2))
+
+(define (cont-proc cont)
+	(vector-ref cont 3))	
+	
+(define (call-cont cont values benv)
+	((cont-proc cont) values benv))
+	
+(define (add-application-cont application cont)
+	(%create-cont (cont-previous cont)
+	              (cont-benv cont)
+	              (cons application (cont-applications cont))
+	              (cont-proc cont)))
+	              
+(define (stack-applications cont)
+	(let recur ((current cont)
+	           (result '()))
+		(if current
+			(recur (cont-previous current) (append (cont-applications current) result))
+			result))) 
+			
+(define (create-closure lam benv)
+	(vector 'closure lam benv))
+	
+(define (closure-lambda closure)
+	(vector-ref closure 1))
+	
+(define (closure-benv closure)
+	(vector-ref closure 2))
+	
+(define (closure? object)
+	(and (vector? object) (eq? (vector-ref object 0) 'closure)))
+	
+(define (create-calling-context operator operands time)
+	(vector operator operands time))
+
+(define (reachable roots store)
+	(let recur ((todo roots)
+	            (result (create-lset)))
+		(if (null? todo)
+		    result
+	   		(let ((address (car todo)))
+	   			(if (member-lset? address result)
+	   				(recur (cdr todo) result)
+	   				(let inner-recur ((values (lookup-store address store))
+	   				                  (touches '()))
+	   					(if (null? values)
+	   						(recur (append touches (cdr todo)) (cons address result))
+	   						(let ((value (car values)))
+	   							(cond ((closure? value)
+	   							       (inner-recur (cdr values) (append touches (touches-benv (closure-benv value)))))
+	   							      (else (inner-recur (cdr values) touches)))))))))))
+
+(define (gc benv cont store)
+	(let recur ((current cont)
+				(stack-reachable (reachable (touches-benv benv) store)))
+		(if current
+			(let ((roots (touches-benv (cont-benv current))))
+				(recur (cont-previous current) (append stack-reachable (reachable roots store))))
+			(keep-all-store stack-reachable store))))
+		
+(define (ipda-eval node k ast)
+	
+	(define result (create-lsetmap))
+	(define store (create-store))
+	(define reads (create-lsetmap))
+	(define writes (create-lsetmap))
+	(define calling-contexts (create-lsetmap))
+	(define time (create-time))
+	
+	(define (eval-literal node benv cont)
+	   (call-cont cont (create-lset (literal-value node)) benv))
+		
+	(define (eval-define node benv cont)
+       (eval-node (define-value node)
+                  benv
+                  (create-cont cont
+                               benv
+                               (lambda (values benv)
+                               	(let* ((var (define-var node))
+                               	       (abstract-var (create-avar var time))
+                               	       (extended-benv (extend-benv (var-name var) abstract-var benv)))  
+                                 (set! store (alloc-store abstract-var values store)) 
+		       				     (call-cont cont
+   						   		            (create-lset *unspecified*)
+   				                            extended-benv))))))
+   				                            
+   	(define (eval-ref node benv cont)
+       (let ((var (lookup-ref-var node ast)))
+       	(if var
+       		(let ((abstract-var (lookup-benv (var-name var) benv)))
+       			(for-each (lambda (application)
+       							(set! reads (put-lsetmap application abstract-var reads)))
+       					  (stack-applications cont))
+       			(call-cont cont
+       	                   (lookup-store abstract-var store)
+       	                   benv))
+       	    (call-cont cont
+       	               (create-lset (eval (ref-name node)))
+       	               benv))))
+       	    ;(error (String/format "variable %1s not found" (vector node))))))
+   	
+
+	(define (eval-set node benv cont)
+       (eval-node (set-value node)
+                  benv
+                  (create-cont cont
+                               benv
+                               (lambda (values benv)
+                               		(let ((var (lookup-set-var node ast)))
+                               		   (if var
+                               		       (let ((abstract-var (lookup-benv (var-name var) benv)))
+                               		         (set! store (update-store abstract-var values store))
+                               		         (for-each (lambda (application)
+                               							 (set! writes (put-lsetmap application abstract-var writes)))
+                               						   (stack-applications cont))))
+                                       (call-cont cont
+                                                  (create-lset *unspecified*)
+                                                  benv))))))
+                                                  
+    (define (eval-lambda node benv cont)
+       (let ((closure (create-closure node benv)))
+       	 (call-cont cont
+       	            (create-lset closure)
+       	            benv)))
+
+
+	(define (eval-application node benv cont)
+	   (set! time (tick-time (.getTag node) k time))
+       (eval-node (application-operator node)
+                  benv
+                  (create-cont cont
+                               benv
+                               (lambda (operator-values benv)
+                          	     (let ((operands (application-operands node))
+                          	     	   (marked-cont (add-application-cont node cont)))
+                          		   (if (null? operands)
+                          		       (apply-proc marked-cont node operator-values '() benv marked-cont)
+                          		       (let recur ((operands (reverse operands))
+                          		                   (operands-values '())
+                          		                   (benv benv))
+                          		         (if (null? operands)
+                          		             (apply-proc node operator-values operands-values benv marked-cont)
+                          		             (eval-node (car operands)
+                          		                        benv
+                          		                        (create-cont cont
+                          		                                     benv
+              		                                                 (lambda (operand-values benv)
+              		                                                 	(if (or (> (length operand-values) 4)
+              		                                                 		    (member *any* operand-values))
+              		                                                 		(call-cont marked-cont (create-lset *any*) benv)
+              		                                     	           	    (recur (cdr operands) (cons operand-values operands-values) benv)))))))))))))
+                          		                            
+	(define (eval-begin node benv cont)
+       (let ((exps (begin-expressions node)))
+       	(if (null? exps)
+       		(call-cont cont (create-lset *unspecified*) benv)
+       		(let recur ((exps exps)
+       		            (benv benv))
+       		  (if (null? (cdr exps))
+       		      (eval-node (car exps)
+       		      			 benv
+       		      			 cont)
+       		      (eval-node (car exps)
+       		                 benv
+       		                 (create-cont cont
+                                          benv
+                                          (lambda (values benv)
+                                          	(recur (cdr exps) benv)))))))))
+       		                    
+	(define (eval-if node benv cont)
+		(eval-node (if-condition node)
+				   benv
+				   (create-cont cont
+				                benv
+				                (lambda (values benv)
+				                	(if (and (not (car values)) (null? (cdr values)))
+				                		(eval-node (if-alternate node) benv cont)
+				                		(if (member #f values)
+				                			(let ((time2 (tick-time (.getTag (if-consequent node)) k time))
+				                			      (time3 (tick-time (.getTag (if-alternate node)) k time)))
+				                				(list (lambda ()
+				                						(set! time time2)
+				                						(eval-node (if-consequent node)
+				                								   benv
+				                								   cont))
+				                					  (lambda ()
+				                					  	(set! time time3)
+				                					    (eval-node (if-alternate node)
+				                					               benv
+				                					               cont))))
+				                	        (eval-node (if-consequent node)
+				                	                   benv
+				                	                   cont)))))))
+				                					
+
+	(define (eval-node node benv cont)
+		(set! store (gc benv cont store))
+		(cond ((literal? node) (eval-literal node benv cont))
+		      ((define? node) (eval-define node benv cont))
+		      ((ref? node) (eval-ref node benv cont))
+		      ((set? node) (eval-set node benv cont))
+		      ((lambda? node) (eval-lambda node benv cont))
+		      ((application? node) (eval-application node benv cont))
+		      ((if? node) (eval-if node benv cont))
+		      ((begin? node) (eval-begin node benv cont))
+		      (else
+		        (error (String/format "cannot handle node %1s" (vector node))))))
+		        
+	(define (apply-proc application operator-values operands-values benv cont)
+		(map (lambda (operator)
+				(lambda ()
+					(let* ((calling-context (create-calling-context operator operands-values time))
+						   (application-calling-contexts (get-lsetmap application calling-contexts)))
+						(if (not (member-lset? calling-context application-calling-contexts))
+							(let ((updated-application-calling-contexts (add-lset calling-context application-calling-contexts)))
+								(set! calling-contexts (put-lsetmap application updated-application-calling-contexts calling-contexts))
+								(if (closure? operator)
+									(apply-closure operator operands-values benv cont)
+									(apply-primitive operator operands-values benv cont)))))))
+				   operator-values))
+										
+	(define (apply-primitive primitive operands-values benv cont)
+		(map (lambda (operands)
+				(lambda ()
+					(call-cont cont (apply primitive operands) benv)))
+			 (perm operands-values)))
+			 
+	(define (apply-closure closure operands-values benv cont)
+		(let ((lam (closure-lambda closure)))
+			(let loop ((params (lambda-params lam))
+			           (extended-benv (closure-benv closure))
+			           (operands-values operands-values))
+				(if (null? params)
+					(eval-node (lambda-body lam)
+							   extended-benv
+							   (create-cont cont
+							   				extended-benv
+							   				(lambda (values extended-benv)
+							   					(call-cont cont values benv))))
+					(let* ((param (car params))
+					       (abstract-var (create-avar param time)))
+						(set! store (alloc-store abstract-var (car operands-values) store))
+						(loop (cdr params) (extend-benv (var-name param) abstract-var extended-benv) (cdr operands-values))))))) 
+
+	(let recur ((tasks (list (lambda ()
+	                            (let ((benv (create-benv)))   
+									(eval-node node 
+				        		   			   benv	
+						  		               (create-cont #f 
+						  		                            benv
+						  		                            (lambda (values benv)
+						  		   					          (set! result (union-lset result values))
+						  		   					          '()))))))))
+		(if (null? tasks)
+			(vector result store reads writes)
+			(recur (append (cdr tasks) ((car tasks)))))))
+		
+(define (ipda-result ipda)
+	(vector-ref ipda 0))
+	
+(define (ipda-store ipda)
+	(vector-ref ipda 1))
+	
+(define (ipda-reads ipda)
+	(vector-ref ipda 2))
+		
+(define (ipda-writes ipda)
+	(vector-ref ipda 3))				
+	
+(define ast (create-ast '(begin (define sq (lambda (n) (* n n))) (sq 5) (sq 6))))
+(display (ipda-eval ast 12 ast))
+(newline)

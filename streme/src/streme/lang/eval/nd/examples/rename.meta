@@ -1,0 +1,15 @@
+(define (rename-var var name)
+  (call-with-current-continuation
+    (lambda (exit)
+	  (rewrite *ast*
+	    (lambda (node)
+	      (cond
+	        ((and (ref? node) (eq? (var-read node) var))
+	          (create-ref name))
+	        ((and (set? node) (eq? (var-written node) var)) 
+	          (create-set (create-var name) (set-value node)))
+	        ((eq? node var)
+	          (if (name-in-scope? name node)
+	            (exit (String/format "name %1s already bound at %2s in %3s" (vector name node (parent-of node))))
+	            (create-var name)))
+	        (else #f)))))))
