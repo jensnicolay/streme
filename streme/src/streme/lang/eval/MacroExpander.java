@@ -439,7 +439,11 @@ public class MacroExpander implements DataRewriter
     {
       Sym name = (Sym) pair.car();
       Lst bindings = (Lst) pair.cadr();
-      Pair body = (Pair) pair.cddr();
+      Lst body = (Lst) pair.cddr();
+      if (body.isNull())
+      {
+        throw new StremeException("no body for named let " + pair);
+      }
       List<Object> params = new ArrayList<Object>();
       List<Object> operands = new ArrayList<Object>();
       for (Object bindingObj : bindings)

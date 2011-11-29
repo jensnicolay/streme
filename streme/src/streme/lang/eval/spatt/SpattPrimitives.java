@@ -1384,6 +1384,7 @@ public class SpattPrimitives
   {
     public Callable<Callable> apply2(Object operator, Object list, final LstEnv env, final TCont cont)
     {
+//      System.out.println("map " + operator + " " + list);
       if (list instanceof Null)
       {
         return cont.call(new Null());
@@ -2140,6 +2141,7 @@ public class SpattPrimitives
   {
     public Callable<Callable> apply2(Object operator, Object operands, LstEnv env, TCont cont)
     {
+//      System.out.println("apply " + operator + " " + operands);
       Procedure proc = (Procedure) operator;
       Object[] ops = ((Lst) operands).properToArray();
       switch (ops.length)

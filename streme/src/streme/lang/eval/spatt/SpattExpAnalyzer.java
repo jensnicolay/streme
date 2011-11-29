@@ -34,7 +34,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
   private final AtomicInteger futures = new AtomicInteger();
   private final int maxFutures = Runtime.getRuntime().availableProcessors() * 2;
   private ExecutorService executor;
-  
+
   public SpattExpAnalyzer(ExecutorService executor)
   {
     super();
@@ -58,7 +58,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
       }
       case REF:
       {
-        Ref ref = (Ref) node;
+        final Ref ref = (Ref) node;
         final Sym sym = ref.getName();
         return new Exp()
         {
@@ -200,67 +200,66 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
           };
         };
       }
-//      case LET:
-//      {
-//        Let let = (Let) node;
-//        switch (let.getKind())
-//        {
-//          case LETREC:
-//          {
-//            Binding[] bindings = let.getBindings();
-//            final int numBindings = bindings.length;
-//            final Sym[] names = new Sym[numBindings];
-//            final Exp[] bindingExps = new Exp[numBindings];
-//            final Exp body = analyze(let.getBody());
-//            for (int i = 0; i < numBindings; i++)
-//            {
-//              names[i] = bindings[i].getVar().getName();
-//              bindingExps[i] = analyze(bindings[i].getValue());
-//            }
-//            return new Exp()
-//            {
-//              public Callable<Callable> eval(final LstEnv env, final TCont cont)
-//              {
-//                final LstEnv extended = new LstEnv(env);
-//                final Pair[] extensions = new Pair[numBindings];
-//                for (int i = 0; i < numBindings; i++)
-//                {
-//                  extensions[i] = extended.add(names[i], null);
-//                }
-//                class LetrecCont extends TCont
-//                {
-//                  int i;
-//
-//                  LetrecCont(int i)
-//                  {
-//                    super();
-//                    this.i = i;
-//                  }
-//
-//                  public Callable<Callable> call(Object value)
-//                  {
-//                    extensions[i].setCdr(value);
-//                    if (i + 1 == numBindings)
-//                    {
-//                      return body.eval(extended, cont);
-//                    }
-//                    else
-//                    {
-//                      return bindingExps[i + 1].eval(extended, new LetrecCont(i + 1));
-//                    }
-//                  }
-//                }
-//                return bindingExps[0].eval(extended, new LetrecCont(0));
-//              }
-//            };            
-//          }
-//          default: throw new StremeException("cannot handle let type " + let); 
-//        }
-//      }
+      // case LET:
+      // {
+      // Let let = (Let) node;
+      // switch (let.getKind())
+      // {
+      // case LETREC:
+      // {
+      // Binding[] bindings = let.getBindings();
+      // final int numBindings = bindings.length;
+      // final Sym[] names = new Sym[numBindings];
+      // final Exp[] bindingExps = new Exp[numBindings];
+      // final Exp body = analyze(let.getBody());
+      // for (int i = 0; i < numBindings; i++)
+      // {
+      // names[i] = bindings[i].getVar().getName();
+      // bindingExps[i] = analyze(bindings[i].getValue());
+      // }
+      // return new Exp()
+      // {
+      // public Callable<Callable> eval(final LstEnv env, final TCont cont)
+      // {
+      // final LstEnv extended = new LstEnv(env);
+      // final Pair[] extensions = new Pair[numBindings];
+      // for (int i = 0; i < numBindings; i++)
+      // {
+      // extensions[i] = extended.add(names[i], null);
+      // }
+      // class LetrecCont extends TCont
+      // {
+      // int i;
+      //
+      // LetrecCont(int i)
+      // {
+      // super();
+      // this.i = i;
+      // }
+      //
+      // public Callable<Callable> call(Object value)
+      // {
+      // extensions[i].setCdr(value);
+      // if (i + 1 == numBindings)
+      // {
+      // return body.eval(extended, cont);
+      // }
+      // else
+      // {
+      // return bindingExps[i + 1].eval(extended, new LetrecCont(i + 1));
+      // }
+      // }
+      // }
+      // return bindingExps[0].eval(extended, new LetrecCont(0));
+      // }
+      // };
+      // }
+      // default: throw new StremeException("cannot handle let type " + let);
+      // }
+      // }
       case APPLICATION:
       {
-//        System.out.println(node);
-        Application application = (Application) node;
+        final Application application = (Application) node;
         Node[] operands = application.getOperands();
         final int length = operands.length;
         final Exp operator = analyze(application.getOperator());
@@ -273,6 +272,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
         {
           public Callable<Callable> eval(final LstEnv env, final TCont cont)
           {
+//            System.out.println(application);
             return operator.eval(env, new TCont()
             {
               public Callable<Callable> call(final Object operator2)
@@ -283,7 +283,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
                   {
                     public Callable call() throws Exception
                     {
-//                      System.out.println("calling " + operator2);
+                      // System.out.println("calling " + operator2);
                       return ((Procedure) operator2).apply0(env, cont);
                     }
                   };
@@ -308,7 +308,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
                       {
                         public Callable call() throws Exception
                         {
-//                          System.out.println("calling " + operator2 + " with " + operands3 + " and " + value);
+                          // System.out.println("calling " + operator2 + " with " + operands3 + " and " + value);
                           switch (length)
                           {
                             case 1:
@@ -322,7 +322,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
                             {
                               List<Object> operands4 = new ArrayList<Object>(operands3);
                               operands4.add(value);
-//                              System.out.println("calling " + operator2 + " with " + operands4);
+                              // System.out.println("calling " + operator2 + " with " + operands4);
                               return ((Procedure) operator2).applyN(operands4.toArray(new Object[length]), env, cont);
                             }
                           }
