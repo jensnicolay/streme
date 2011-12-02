@@ -135,6 +135,7 @@
 			(error (String/format "no aval to lookup at address %1s" (vector address))))))
 	
 (define (store-alloc-aval address values store)
+	(d 'store-alloc-aval address values store)
 	(let ((entry (store-lookup-entry address store)))
 		(if entry
 			(store-update address (aval-weak-update values (cdr entry)) store)
@@ -419,11 +420,9 @@
 			                					  (lambda ()
 			                					  	(set! time time3)
 			                					    (eval-node (if-alternate node) benv cont))))
-			                	        (eval-node (if-consequent node)
-			                	                   benv
-			                	                   cont))))))
+			                	        (eval-node (if-consequent node) benv cont))))))
 			  (if-cont-address (generate-cont-address)))
-		  (set! store (store-update if-cont-address if-cont-address store))
+		  (set! store (store-update if-cont-address if-cont store))
 		  (eval-node (if-condition node) benv if-cont-address)))
 				                					
 
@@ -447,19 +446,21 @@
 				(lambda ()
 					(let* ((calling-context (create-calling-context operator operands-values time))
 						   (application-calling-contexts (lsetmap-get application calling-contexts)))
-						(if (not (lset-member? calling-context application-calling-contexts))
+						(if (lset-member? calling-context application-calling-contexts)
+							(d '() 'bingo calling-context)
 							(let ((updated-application-calling-contexts (lset-add calling-context application-calling-contexts)))
 								(set! calling-contexts (lsetmap-put application updated-application-calling-contexts calling-contexts))
+								(d 'nope calling-context)
 								(if (closure? operator)
 									(apply-closure operator operands-values benv cont)
 									(apply-primitive operator operands-values benv cont)))))))
 				   operator-values))
 										
 	(define (apply-primitive primitive operands-values benv cont)
-		(map (lambda (operands)
-				(lambda ()
-					(store-cont-call cont (apply primitive operands) store)))
-			 (perm operands-values)))
+		(let ((values (map (lambda (operands)
+								(apply primitive operands))
+			 			   (perm operands-values))))
+			(store-cont-call cont values store)))
 			 
 	(define (apply-closure closure operands-values benv cont)
 		(let ((lam (closure-lambda closure))
@@ -508,14 +509,39 @@
 	(vector-ref ipda 3))				
 
 (define (ipda-application-writes application ipda)
-	(assoc application (ipda-writes ipda)))
+	(let ((entry (assoc application (ipda-writes ipda))))
+		(if entry
+			(cdr entry)
+			#f)))
+			
+(define (ipda-application-reads application ipda)
+	(let ((entry (assoc application (ipda-writes ipda))))
+		(if entry
+			(cdr entry)
+			#f)))
+		 
+(define (ipda-var-written-by var ipda)
+	(let loop ((writes (ipda-writes ipda))
+			   (result '()))
+	  (if (null? writes)
+	      result
+	      (let ((entry (car writes)))
+	      	(let ((vars (map var-address-var (cdr entry))))
+	      		(if (member var vars)
+	      			(loop (cdr writes) (cons (car entry) result))
+	      			(loop (cdr writes) result)))))))
 	
-(define ast (create-ast '(begin (define z #f) (define writez (lambda () (set! z 123))) (define readz (lambda () z)) (cons (writez) (readz)))))
-(define ipda (ipda-eval ast 12 ast))
-(d (ipda-result) 'result)
-(d (ipda-store) 'store)
-(d (ipda-reads) 'reads)
-(d (ipda-writes) 'writes)
+(define (ipda-var-read-by var ipda)
+	(let loop ((reads (ipda-reads ipda))
+			   (result '()))
+	  (if (null? reads)
+	      result
+	      (let ((entry (car reads)))
+	      	(let ((vars (map var-address-var (cdr entry))))
+	      		(if (member var vars)
+	      			(loop (cdr reads) (cons (car entry) result))
+	      			(loop (cdr reads) result)))))))
+	
 
-(d (filter application? (nodes ast)))
+	
 

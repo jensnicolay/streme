@@ -283,7 +283,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
                   {
                     public Callable call() throws Exception
                     {
-                      // System.out.println("calling " + operator2);
+//                       System.out.println("calling " + operator2);
                       return ((Procedure) operator2).apply0(env, cont);
                     }
                   };
@@ -308,7 +308,7 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
                       {
                         public Callable call() throws Exception
                         {
-                          // System.out.println("calling " + operator2 + " with " + operands3 + " and " + value);
+//                           System.out.println("calling " + operator2 + " with " + operands3 + " and " + value);
                           switch (length)
                           {
                             case 1:

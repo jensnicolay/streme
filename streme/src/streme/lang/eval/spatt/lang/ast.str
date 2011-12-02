@@ -155,7 +155,7 @@
 	(.getAlternate if))
 
 
-;; === lexical scoping
+;; === LEXICAL SCOPING
 
 (define (vars-in-scope n ast)
 	(let ((p (parent n ast)))
@@ -206,5 +206,22 @@
 				(and (set? n) (eq? (lookup-set-var n ast) var)))
 		    (nodes ast)))
 
-;; ===
+;; === FILTERS
 
+(define (and-filter . filters)
+	(lambda (x)
+		(let loop ((filters filters)
+				   (result #t))
+			(if (or (not result) (null? filters))
+				result
+				(loop (cdr filters) (and result ((car filters) x)))))))
+
+(define (definition-var-filter)
+	(lambda (node)
+		(and (var? node) (define? (parent node)))))
+		
+(define (name-filter name)
+	(lambda (node)
+		(name-equals? node name)))
+
+;; ===

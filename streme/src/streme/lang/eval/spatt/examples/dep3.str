@@ -1,0 +1,16 @@
+(define ast (create-ast '(begin (define count (lambda (n) (if (zero? n) 'done (count (- n 1))))) (count 300))))
+
+(define ipda (ipda-eval ast 1 ast))
+(d (ipda-result) 'result)
+(d (ipda-store) 'store)
+(d (ipda-reads) 'reads)
+(d (ipda-writes) 'writes)
+
+(let ((cons-app (car (filter application? (nodes ast)))))
+	(d (ipda-application-writes cons-app ipda) 'writes)
+	(d (ipda-application-reads cons-app ipda) 'reads))
+
+
+(let ((z-var (car (filter (and-filter (definition-var-filter) (name-filter 'z)) (nodes ast)))))
+	(d (ipda-var-written-by z-var ipda) 'written-by)
+	(d (ipda-var-read-by z-var ipda) 'read-by))

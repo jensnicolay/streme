@@ -87,7 +87,7 @@ public class DataNodeUnifier
         {
           return null;
         }
-        Lst l = Lst.valueOf(define.children());
+        Lst l = define.children();
         return unify2((Lst) p.cdr(), l, handler);
       }
       case APPLICATION:
@@ -98,7 +98,7 @@ public class DataNodeUnifier
           return null;
         }
         Lst p = (Lst) data;
-        Lst l = Lst.valueOf(application.children());
+        Lst l = application.children();
         return unify2(p, l, handler);
       }
       case BEGIN:
@@ -113,7 +113,7 @@ public class DataNodeUnifier
         {
           return null;
         }
-        Lst l = Lst.valueOf(begin.children());
+        Lst l = begin.children();
         return unify2((Lst) p.cdr(), l, handler);
       }
       case LAMBDA:
@@ -148,7 +148,7 @@ public class DataNodeUnifier
           }
         }
         dataChildren = dataChildren.append((Lst) p.cddr());
-        Lst l = Lst.valueOf(lambda.children());
+        Lst l = lambda.children();
         return unify2(dataChildren, l, handler);        
       }
       case SETVAR:
@@ -163,7 +163,7 @@ public class DataNodeUnifier
         {
           return null;
         }
-        Lst l = Lst.valueOf(setVar.children());
+        Lst l = setVar.children();
         return unify2((Lst) p.cdr(), l, handler);        
       }
       case LET:
@@ -190,7 +190,7 @@ public class DataNodeUnifier
         Lst dataBindings = (Lst) p.cadr();
         Lst body = (Lst) p.cddr();
         Lst dataChildren = dataBindings.append(body);
-        Lst nodeChildren = Lst.valueOf(let.children());
+        Lst nodeChildren = let.children();
         return unify2(dataChildren, nodeChildren, handler);
       }
       case BINDING:
@@ -205,7 +205,7 @@ public class DataNodeUnifier
         {
           return null;
         }
-        Lst nodeChildren = Lst.valueOf(binding.children());
+        Lst nodeChildren = binding.children();
         return unify2(p, nodeChildren, handler);
       }
       default:
@@ -251,7 +251,7 @@ public class DataNodeUnifier
     final Parser2 parser = new Parser2();
     AstDataCompiler compiler = new StremeDataCompiler();
     Node ast = compiler.compile(parser.parse(source));
-    final Object query = parser.parse("(define ?x{x} ?)");
+    final Object query = parser.parse("(define ?x ?)");
     final DataNodeUnifier unifier = new DataNodeUnifier();
     final ConditionHandler conditionHandler = new ConditionHandler()
     {
@@ -272,35 +272,6 @@ public class DataNodeUnifier
       public boolean visitNode(Node node)
       {
         Map<Sym, Node> s = unifier.unify(query, node, conditionHandler);
-        if (s != null)
-        {
-          System.out.println(node + " (" + node.type() + "): " + s);
-        }
-        return true;
-      }
-    });
-    System.out.println("=========================");
-    final NodeUnifier nodeUnifier = new NodeUnifier();
-    final Node nodeQuery = compiler.compile(query);
-    final NodeUnifier.ConditionHandler conditionHandler2 = new NodeUnifier.ConditionHandler()
-    {
-      public Map<Sym, Node> accept(Sym var, Node node, String condition)
-      {
-        Node n = new StremeDataCompiler().compile(parser.parse(condition));
-        Map<Sym, Node> s = nodeUnifier.unify(node, n, this);
-        if (s == null)
-        {
-          return null;
-        }
-        s.put(var, node);
-        return s;
-      }
-    };
-    ast.accept(new AstVisitor()
-    {
-      public boolean visitNode(Node node)
-      {
-        Map<Sym, Node> s = nodeUnifier.unify(nodeQuery, node, conditionHandler2);
         if (s != null)
         {
           System.out.println(node + " (" + node.type() + "): " + s);

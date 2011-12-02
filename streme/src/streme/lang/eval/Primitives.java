@@ -1,6 +1,7 @@
 package streme.lang.eval;
 
 import java.math.BigInteger;
+import java.util.Arrays;
 
 import streme.lang.StremeException;
 import streme.lang.data.Lst;
@@ -85,6 +86,19 @@ public class Primitives
     if (o1 instanceof String)
     {
       return o1.equals(o2);
+    }
+    if (o1 instanceof Object[])
+    {
+      if (o2 instanceof Object[])
+      {
+        Object[] a1 = (Object[]) o1;
+        Object[] a2 = (Object[]) o2;
+        return Arrays.equals(a1, a2);
+      }
+      else
+      {
+        return false;
+      }
     }
     return eqv(o1, o2);
   }
