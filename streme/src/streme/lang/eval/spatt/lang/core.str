@@ -25,3 +25,8 @@
 
 (define (id x)
 	x)
+	
+;; === DEBUG
+
+(define (d exp . messages)
+	(display messages) (display '==>) (display exp) (newline) exp)

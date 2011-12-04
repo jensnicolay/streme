@@ -1,10 +1,10 @@
-(define ast (create-ast '(begin (define fib (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))) (fib 2))))
+(define ast (create-ast '(begin (define count (lambda (n) (if (zero? n) 'done (count (- n 1))))) (count 2000))))
 
 (define ipda (ipda-eval ast 12 ast))
-(d (ipda-result) 'result)
-(d (ipda-store) 'store)
-(d (ipda-reads) 'reads)
-(d (ipda-writes) 'writes)
+(d (ipda-result ipda) 'result)
+(d (ipda-store ipda) 'store)
+(d (ipda-reads ipda) 'reads)
+(d (ipda-writes ipda) 'writes)
 
 (let ((cons-app (car (filter application? (nodes ast)))))
 	(d (ipda-application-writes cons-app ipda) 'writes)

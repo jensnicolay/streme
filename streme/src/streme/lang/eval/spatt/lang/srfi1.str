@@ -6,15 +6,81 @@
 				(cons x (filter pred (cdr l)))
 				(filter pred (cdr l))))))
 		
-				
 (define (fold kons knil lis1)
   (let lp ((lis lis1) (ans knil))			; Fast path
 	(if (null-list? lis) ans
 	    (lp (cdr lis) (kons (car lis) ans)))))
-
 
 (define (fold-right kons knil lis1)
   (let recur ((lis lis1))				; Fast path
 	(if (null-list? lis) knil
 	    (let ((head (car lis)))
 	      (kons head (recur (cdr lis)))))))
+	      
+(define (delete x lis) 
+  (filter (lambda (y) (not (equal? x y))) lis))	      
+	     
+(define (delete-duplicates lis)
+    (let recur ((lis lis))
+      (if (null? lis) lis
+	  (let* ((x (car lis))
+		 (tail (cdr lis))
+		 (new-tail (recur (delete x tail))))
+	    (if (eq? tail new-tail) lis (cons x new-tail))))))
+
+
+;; === EXTRA 	    
+	    
+(define (%create-lset . els)
+	els)
+	
+(define (create-lset . els)
+	(lset-add-all els (%create-lset)))
+	
+(define (lset-add el s)
+	(if (member el s)
+		s
+		(cons el s)))
+		
+(define (lset-add-all els s)
+	(if (null? els)
+		s
+		(lset-add-all (cdr els) (lset-add (car els) s))))
+				
+(define (lset-union ls1 ls2)
+	(lset-add-all ls1 ls2))
+	
+(define (lset-intersection ls1 ls2)
+	(filter (lambda (el)
+			  (member el ls2)) ls1))
+	
+(define (lset-member? el s)
+	(member el s))
+
+(define (create-lsetmap)
+	'())
+	
+(define (lsetmap-put key value lsetmap)
+	(if (null? lsetmap)
+		(list (cons key (%create-lset value)))
+		(let ((entry (car lsetmap)))
+				(if (equal? (car entry) key)
+					(cons (cons key (lset-add value (cdr entry))) (cdr lsetmap))
+					(cons entry (lsetmap-put key value (cdr lsetmap)))))))
+
+(define (lsetmap-get key lsetmap)
+	(let ((entry (assoc key lsetmap)))
+		(if entry
+			(cdr entry)
+			'())))
+			
+(define (perm l)
+  (if (null? (cdr l))
+      (map list (car l))
+      (let ((rest (perm (cdr l))))
+        (apply append (map (lambda (x)
+                             (map (lambda (y)
+                                    (cons x y))
+                                  rest))
+                           (car l))))))
+	    

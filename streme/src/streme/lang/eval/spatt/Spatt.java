@@ -87,6 +87,7 @@ public class Spatt implements StremeContext
     readEvalPrint("(load \"lang/ast.str\")");
     readEvalPrint("(load \"lang/transform.str\")");
     readEvalPrint("(load \"lang/ipda.str\")");
+    readEvalPrint("(load \"lang/dep.str\")");
   }
 
   public void startRepl()

@@ -206,9 +206,29 @@
 				(and (set? n) (eq? (lookup-set-var n ast) var)))
 		    (nodes ast)))
 
+(define (lookup-ref-vars n ast)
+	(let lookup-ref-vars ((n n))
+		(if (ref? n)
+			(let ((var (lookup-ref-var n ast)))
+				(if var
+				   (list var)
+				   '()))
+			(let ((cs (filter (not%1 lambda?) (children n))))
+				(apply append (map lookup-ref-vars cs))))))
+			
+(define (lookup-set-vars n ast)
+	(let lookup-set-vars ((n n)) 
+		(if (set? n)
+			(let ((var (lookup-set-var n ast)))
+				(if var
+					(cons var (lookup-set-vars (set-value n)))
+					(lookup-set-vars (set-value n))))
+			(let ((cs (filter (not%1 lambda?) (children n))))
+				(apply append (map lookup-set-vars cs))))))
+			
 ;; === FILTERS
 
-(define (and-filter . filters)
+(define (and%1 . filters)
 	(lambda (x)
 		(let loop ((filters filters)
 				   (result #t))
@@ -216,12 +236,31 @@
 				result
 				(loop (cdr filters) (and result ((car filters) x)))))))
 
-(define (definition-var-filter)
+(define (not%1 filter)
+	(lambda (x)
+		(not (filter x))))
+		
+(define (apply%1 proc filter)
+	(lambda (x)
+		(filter (proc x))))
+
+(define (definition-var%1)
 	(lambda (node)
 		(and (var? node) (define? (parent node)))))
 		
-(define (name-filter name)
+(define (name%1 name)
 	(lambda (node)
 		(name-equals? node name)))
+		
+(define (application-with-operator-name%1 name)
+	(lambda (node)
+		(and (application? node)
+		     (name-equals? (application-operator node) name))))
 
 ;; ===
+
+(define (match pattern ast)
+	(streme.lang.ast.impl.DataNodeUnifier/unify pattern ast))	           
+
+;; ===
+

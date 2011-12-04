@@ -109,7 +109,6 @@ public class SpattPrimitives
     env.add(new Sym("memv"), new Memv());
     env.add(new Sym("memq"), new Memq());
     env.add(new Sym("member"), new Member());
-    env.add(new Sym("member"), new Member());
     env.add(new Sym("append"), new Append());
     env.add(new Sym("map||"), new PMap(context.executor()));
     env.add(new Sym("map"), new Map());
@@ -1384,7 +1383,6 @@ public class SpattPrimitives
   {
     public Callable<Callable> apply2(Object operator, Object list, final LstEnv env, final TCont cont)
     {
-//      System.out.println("map " + operator + " " + list);
       if (list instanceof Null)
       {
         return cont.call(new Null());
@@ -1412,6 +1410,41 @@ public class SpattPrimitives
         }
       });
     }
+    
+    public Callable<Callable> apply3(Object operator, Object l1, Object l2, final LstEnv env, final TCont cont)
+    {
+      if (l1 instanceof Null)
+      {
+        return cont.call(new Null());
+      }
+      final Procedure op = (Procedure) operator;
+      final Pair lst1 = (Pair) l1;
+      final Pair lst2 = (Pair) l2;
+      return op.apply2(lst1.car(), lst2.car(), env, new TCont()
+      {
+        private java.util.List<Object> mapped = new ArrayList<Object>();
+        private Lst l1 = (Lst) lst1.cdr();
+        private Lst l2 = (Lst) lst2.cdr();
+
+        public Callable<Callable> call(Object value)
+        {
+          mapped.add(value);
+          if (l1.isNull())
+          {
+            return cont.call(Lst.valueOf(mapped));
+          }
+          else
+          {
+            Object car1 = l1.car();
+            Object car2 = l2.car();
+            l1 = (Lst) l1.cdr();
+            l2 = (Lst) l2.cdr();
+            return op.apply2(car1, car2, env, this);
+          }
+        }
+      });
+    }
+    
     // TODO other apply2, ..., applyN
   }
 
@@ -1498,6 +1531,11 @@ public class SpattPrimitives
 
   public static final class Append extends Procedure
   {
+    public Callable<Callable> apply0(LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.append());
+    }
+    
     public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
     {
       return cont.call(Primitives.append(operand));
@@ -1536,6 +1574,14 @@ public class SpattPrimitives
   }
 
   public static final class Member extends Procedure
+  {
+    public Callable<Callable> apply2(Object candidate, Object list, LstEnv env, TCont cont)
+    {
+      return cont.call(Primitives.member(candidate, list));
+    }
+  }
+
+  public static final class Member2 extends Procedure
   {
     public Callable<Callable> apply2(Object candidate, Object list, LstEnv env, TCont cont)
     {

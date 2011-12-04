@@ -1,9 +1,9 @@
 (define ast (create-ast '(begin (define z #f) (define writez (lambda () (set! z 123))) (define readz (lambda () z)) (cons (writez) (readz)))))
 (define ipda (ipda-eval ast 12 ast))
-(d (ipda-result) 'result)
-(d (ipda-store) 'store)
-(d (ipda-reads) 'reads)
-(d (ipda-writes) 'writes)
+(d (ipda-result ipda) 'result)
+(d (ipda-store ipda) 'store)
+(d (ipda-reads ipda) 'reads)
+(d (ipda-writes ipda) 'writes)
 
 (let ((cons-app (car (filter application? (nodes ast)))))
 	(d (ipda-application-writes cons-app ipda) 'writes)
@@ -13,3 +13,9 @@
 (let ((z-var (car (filter (and-filter (definition-var-filter) (name-filter 'z)) (nodes ast)))))
 	(d (ipda-var-written-by z-var ipda) 'written-by)
 	(d (ipda-var-read-by z-var ipda) 'read-by))
+	
+(let ((writez-app (caar (match '(writez) ast)))
+      (readz-app (caar (match '(readz) ast))))
+	(d (ip-dependencies readz-app writez-app ipda))
+	(d (ip-dependencies writez-app readz-app ipda)))
+	

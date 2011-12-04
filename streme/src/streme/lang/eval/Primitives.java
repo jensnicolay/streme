@@ -413,6 +413,11 @@ public class Primitives
     return operand instanceof Object[];
   }
 
+  public static Lst append()
+  {
+    return new Null();
+  }
+
   public static Lst append(Object operand)
   {
     return (Lst) operand;

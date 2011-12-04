@@ -1,6 +1,8 @@
 package streme.lang.ast.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import streme.lang.StremeException;
@@ -243,6 +245,40 @@ public class DataNodeUnifier
   private boolean isAny(Object object)
   {
     return object instanceof Sym && ((Sym) object).getName().equals("?");
+  }
+  
+  public static Lst unify(final Object data, final Node node)
+  {
+    final DataNodeUnifier unifier = new DataNodeUnifier();
+    final Parser2 parser = new Parser2();
+    final ConditionHandler conditionHandler = new ConditionHandler()    
+    {
+      public Map<Sym, Node> accept(Sym var, Node node, String condition)
+      {
+        Object q = parser.parse(condition);
+        Map<Sym, Node> s = unifier.unify(q, node, this);
+        if (s == null)
+        {
+          return null;
+        }
+        s.put(var, node);
+        return s;
+      }
+    };
+    final List<Pair<Node, Map<Sym, Node>>> matches = new ArrayList<Pair<Node, Map<Sym, Node>>>();
+    node.accept(new AstVisitor()
+    {
+      public boolean visitNode(Node node)
+      {
+        Map<Sym, Node> s = unifier.unify(data, node, conditionHandler);
+        if (s != null)
+        {
+          matches.add(Pair.cons(node, s));
+        }
+        return true;
+      }
+    });
+    return Lst.valueOf(matches);
   }
 
   public static void main(String[] args)
