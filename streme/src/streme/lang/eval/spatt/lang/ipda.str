@@ -205,6 +205,7 @@
 		(store-update cont-address (cont-add-application application cont) store)))
 			
 (define (create-closure lam benv)
+	(d 'create-closure lam benv)
 	(vector 'closure lam benv))
 	
 (define (closure? object)
@@ -254,6 +255,7 @@
 							     
 (define (store-gc benv-address cont tasks store)
 	(let ((reachable (cont-reachable cont (benv-reachable benv-address (tasks-reachable tasks '() store) store) store)))
+		(d reachable 'reachable)
 		(let loop ((todo store)
 		           (result '()))
 			(if (null? todo)
@@ -375,20 +377,16 @@
 			                benv
 			                (lambda (values)
 			                	(cond ((equal? values '(#f))
-			                			;(d 0 values)
 			                		   (eval-node (if-alternate node) benv cont))
 			                		  ((and (pair? values) (not (member #f values)))
-			                		    ;(d 1 values)
 			                		   (eval-node (if-consequent node) benv cont))
 			                		  (else
 			                		   (let ((time2 (time-tick (.getTag (if-consequent node)) k time))
 			                		         (time3 (time-tick (.getTag (if-alternate node)) k time)))
 			                			(list (create-cont cont benv (lambda ()
-			                											;(d 2 values)
 						                								(set! time time2)
 						                								(eval-node (if-consequent node) benv cont)))
 			                				  (create-cont cont benv (lambda ()
-			                				  							;(d 3 values)
 						                					  			(set! time time3)
 						                					    		(eval-node (if-alternate node) benv cont))))))))))
 			  (if-cont-address (generate-cont-address)))
@@ -397,6 +395,9 @@
 				                					
 
 	(define (eval-node node benv-address cont)
+		(newline)
+		(d 'eval node benv-address cont)
+		(d 'benv (store-lookup benv-address store))
 		;(d 'before store)
 		(set! store (store-gc benv-address cont tasks store))
 		;(d 'after store)
@@ -428,7 +429,6 @@
 				   operator-values))
 										
 	(define (apply-primitive primitive operands-values benv cont)
-		(d 'apply-primitive operands-values)
 		(if (member *any* operands-values)
 			(store-cont-call cont *any* store)
 			(let ((values (map (lambda (operands)
@@ -538,5 +538,13 @@
 
 ;; ===
 
+;(define ast (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b))))
+;								(define lister (lambda (g) (lambda (x) (list (g x)))))
+;								(define square (lambda (x) (* x x)))
+;								(appender (lister square) 42 43))))
 
+(define ast (create-ast '(begin 
+  (define lister (lambda (g) (lambda (x) (+ g x))))
+  ((lister 1) 2))))
 
+(define ipda (ipda-eval ast 20 ast))

@@ -12,6 +12,11 @@ import streme.lang.data.Sym;
 public class Primitives
 {
   
+  public static final boolean not(Object operand)
+  {
+    return Boolean.FALSE.equals(operand);
+  }
+  
   public static final boolean evenp(Object operand)
   {
     return ((BigInteger) operand).mod(new BigInteger("2")).equals(BigInteger.ZERO);

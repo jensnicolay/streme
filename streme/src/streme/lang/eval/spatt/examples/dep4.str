@@ -1,0 +1,17 @@
+(define ast (create-ast '(begin (define fib (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))) (fib 5))))
+
+(define ipda (ipda-eval ast 6 ast))
+(d (ipda-result ipda) 'result)
+(d (ipda-store ipda) 'store)
+(d (ipda-reads ipda) 'reads)
+(d (ipda-writes ipda) 'writes)
+
+(let ((cons-app (car (filter application? (nodes ast)))))
+	(d (ipda-application-writes cons-app ipda) 'writes)
+	(d (ipda-application-reads cons-app ipda) 'reads))
+
+
+(let ((z-var (car (filter (and-filter (definition-var-filter) (name-filter 'z)) (nodes ast)))))
+	(d (ipda-var-written-by z-var ipda) 'written-by)
+	(d (ipda-var-read-by z-var ipda) 'read-by))
+	

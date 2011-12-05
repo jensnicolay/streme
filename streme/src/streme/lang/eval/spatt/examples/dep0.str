@@ -1,0 +1,9 @@
+;(define ast (create-ast '(begin 1 2 3)))
+(define ast (create-ast '(begin (define sq (lambda (n) (* n n))) (sq 5) (sq 6))))
+
+(define ipda (ipda-eval ast 1 ast))
+(d (ipda-result ipda) 'result)
+(d (ipda-store ipda) 'store)
+(d (ipda-reads ipda) 'reads)
+(d (ipda-writes ipda) 'writes)
+

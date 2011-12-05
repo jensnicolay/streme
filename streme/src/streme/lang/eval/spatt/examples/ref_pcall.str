@@ -1,0 +1,25 @@
+(define (list-of-applications? l)
+	(if (null? l)
+		#t
+		(and (application? (car l)) (list-of-applications? (cdr l)))))
+		  
+(define (parallelize-invocations ast ipda)
+	(rewrite ast
+			 (lambda (node)
+			 	(if (application? node)
+			 		(let ((operands (application-operands node)))
+			 			(if (and (>= (length operands) 2)
+			 			         (list-of-applications? operands)
+			 			         (independent? operands ast ipda))
+			 			   (create-application (create-ref 'pcall)
+			 			   					   (cons (application-operator node) operands))
+			 		       #f))
+			        #f))))
+			        
+			        
+(define ast (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b))))
+								(define lister (lambda (g) (lambda (x) (list (g x)))))
+								(define square (lambda (x) (* x x)))
+								(appender (lister square) 42 43))))
+(define ipda (ipda-eval ast 2 ast))
+			 			

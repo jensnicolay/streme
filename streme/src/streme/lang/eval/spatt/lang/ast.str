@@ -132,6 +132,9 @@
 
 (define (begin-expressions begin)
 	(vector->list (.getExps begin)))
+	
+(define (create-application operator operands)
+	(streme.lang.ast.Application. operator (list->vector operands)))
 
 (define (application? node)
 	(eq? (.type node) streme.lang.ast.Node$Type/APPLICATION))

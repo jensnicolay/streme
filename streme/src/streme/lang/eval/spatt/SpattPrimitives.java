@@ -830,7 +830,7 @@ public class SpattPrimitives
   {
     public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
     {
-      return cont.call(operand == Boolean.FALSE ? Boolean.TRUE : Boolean.FALSE);
+      return cont.call(Primitives.not(operand));
     }
   }
 

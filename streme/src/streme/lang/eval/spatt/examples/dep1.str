@@ -10,12 +10,10 @@
 	(d (ipda-application-reads cons-app ipda) 'reads))
 
 
-(let ((z-var (car (filter (and-filter (definition-var-filter) (name-filter 'z)) (nodes ast)))))
+(let ((z-var (car (filter (and%1 (definition-var%1) (name%1 'z)) (nodes ast)))))
 	(d (ipda-var-written-by z-var ipda) 'written-by)
 	(d (ipda-var-read-by z-var ipda) 'read-by))
 	
 (let ((writez-app (caar (match '(writez) ast)))
       (readz-app (caar (match '(readz) ast))))
-	(d (ip-dependencies readz-app writez-app ipda))
-	(d (ip-dependencies writez-app readz-app ipda)))
-	
+   (d (independent? (list writez-app readz-app) ast ipda) 'independent?))	

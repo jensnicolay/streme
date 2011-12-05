@@ -1,0 +1,79 @@
+(define (create-dependency type source target)
+	(vector type source target))
+	
+(define (dependency-type dependency)
+	(vector-ref dependency 0))
+
+(define (dependency-source dependency)
+	(vector-ref dependency 1))
+
+(define (dependency-target dependency)
+	(vector-ref dependency 2))
+
+(define (lexical-dependencies e1 e2 ast)
+	(let ((dr1 (delete-duplicates (lookup-ref-vars e1 ast)))
+	      (dr2 (delete-duplicates (lookup-ref-vars e2 ast)))
+	      (dw1 (delete-duplicates (lookup-set-vars e1 ast)))
+	      (dw2 (delete-duplicates (lookup-set-vars e2 ast))))
+	  (let ((rws (lset-intersection dr1 dw2))
+	        (wrs (lset-intersection dw1 dr2))
+	        (wws (lset-intersection dw1 dw2)))
+	     (apply append (list (if (null? rws)
+		                       '()
+		                       (list (create-dependency 'rw 'lex rws)))
+		                   (if (null? wrs)
+		                       '()
+		                       (list (create-dependency 'wr 'lex wrs))) 
+		                   (if (null? wws)
+		                       '()
+		                       (list (create-dependency 'ww 'lex wws)))))))) 
+
+(define (ip-dependencies e1 e2 ipda)
+	(let ((dr1 (ipda-read-vars e1 ipda))
+	      (dr2 (ipda-read-vars e2 ipda))
+	      (dw1 (ipda-written-vars e1 ipda))
+	      (dw2 (ipda-written-vars e2 ipda)))
+	  (let ((rws (lset-intersection dr1 dw2))
+	        (wrs (lset-intersection dw1 dr2))
+	        (wws (lset-intersection dw1 dw2)))
+	     (apply append (list (if (null? rws)
+		                       '()
+		                       (list (create-dependency 'rw 'ip rws)))
+		                   (if (null? wrs)
+		                       '()
+		                       (list (create-dependency 'wr 'ip wrs))) 
+		                   (if (null? wws)
+		                       '()
+		                       (list (create-dependency 'ww 'ip wws))))))))
+	                       
+	                       
+(define (dependencies e1 e2 ast ipda)
+	(append (lexical-dependencies e1 e2 ast)
+		    (ip-dependencies e1 e2 ipda)))
+		    
+(define (dependent? e1 e2 ast ipda)
+	(pair? (dependencies e1 e2 ast ipda)))		    
+		    
+;(define (independent? l ast ipda)
+;	(fold (lambda (x y) (and x y))
+;	      #t
+;	      (map (lambda (es)
+;				(let ((e1 (car es))
+;					  (e2 (cadr es)))
+;					(not (and (not (equal? e1 e2))
+;					          (dependent? e1 e2 ast ipda))))))
+;			 (perm (list l l))))
+	                     
+(define (independent? l ast ipda)
+	(if (< (length l) 2)
+		#t
+		(let ((e (car l)))
+			(let loop ((r (cdr l)))
+				(if (null? r)
+					(independent? (cdr l) ast ipda)
+					(if (dependent? e (car r))
+						#f
+						(loop (cdr r))))))))
+	                 
+;; ===
+
