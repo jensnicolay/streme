@@ -169,6 +169,10 @@ public class SpattExpAnalyzer implements AstAnalyzer<Exp>
               public Callable<Callable> call(Object value)
               {
                 env.add(name, value);
+                if (value instanceof Procedure)
+                {
+                  ((Procedure) value).setName(name);
+                }
                 return cont.call(Void.TYPE);
               }
             });

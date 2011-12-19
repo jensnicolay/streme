@@ -5,6 +5,9 @@
 (define (create-ast data)
 	(.compile (streme.lang.ast.impl.StremeSpDataCompiler2.) data))
 
+(define (node-tag node)
+	(.getTag node))
+
 (define (children n)
 	(.children n))
 	

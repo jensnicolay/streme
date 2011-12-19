@@ -77,3 +77,13 @@
 	                 
 ;; ===
 
+(define ast (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))))
+;(define ast (create-ast '(begin (define z '()) (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define conser (lambda (x) (set! z (cons x z)) z)) (appender (lister conser) 42 43))))
+
+
+(define ipda (ipda-eval ast 4 ast))
+(d 'result (ipda-result ipda))
+
+(let* ((ha-app (caar (match '(h a) ast)))
+	   (hb-app (caar (match '(h b) ast))))
+	(d 'dependent? (dependent? ha-app hb-app)))

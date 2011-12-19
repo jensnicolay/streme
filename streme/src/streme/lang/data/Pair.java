@@ -106,11 +106,11 @@ public class Pair<L, R> extends Lst
 
   public String toString()
   {
-    Map<Pair, Integer> ags = new IdentityHashMap<Pair, Integer>();
+    Map<Object, Integer> ags = new IdentityHashMap<Object, Integer>();
     return toStringInternal(ags);
   }
 
-  private String toStringInternal(Map<Pair, Integer> ags)
+  public String toStringInternal(Map<Object, Integer> ags)
   {
     StringBuilder sb = new StringBuilder();
     sb.append("(");

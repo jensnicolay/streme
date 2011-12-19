@@ -28,6 +28,10 @@
 		 (new-tail (recur (delete x tail))))
 	    (if (eq? tail new-tail) lis (cons x new-tail))))))
 
+(define (take lis n)
+	(if (zero? n)
+		'()
+		(cons (car lis) (take (cdr lis) (- n 1)))))
 
 ;; === EXTRA 	    
 	    

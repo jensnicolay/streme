@@ -220,6 +220,11 @@ public abstract class Lst implements Iterable<Object>
     return ((Lst) cddr()).cdr();
   }
 
+  public Object cddddr()
+  {
+    return ((Lst) cdddr()).cdr();
+  }
+
   public Object cadadr()
   {
     return ((Lst) cdadr()).car();

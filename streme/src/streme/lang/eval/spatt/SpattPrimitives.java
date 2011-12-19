@@ -127,7 +127,9 @@ public class SpattPrimitives
     env.add(new Sym("cadadr"), new Cadadr());
     env.add(new Sym("cddr"), new Cddr());
     env.add(new Sym("cdddr"), new Cdddr());
+    env.add(new Sym("cddddr"), new Cddddr());
     env.add(new Sym("list-ref"), new ListRef());
+    env.add(new Sym("list-tail"), new ListTail());
     env.add(new Sym("reverse"), new Reverse());
     env.add(new Sym("equal?"), new EqualP());
     env.add(new Sym("eqv?"), new EqvP());
@@ -160,6 +162,7 @@ public class SpattPrimitives
     env.add(new Sym("-"), new Minus());
     env.add(new Sym("+"), new Plus());
     env.add(new Sym("*"), new Multiply());
+    env.add(new Sym("/"), new Divide());
     env.add(new Sym("+i"), new IPlus());
     env.add(new Sym("-i"), new IMinus());
     env.add(new Sym("*i"), new IMultiply());
@@ -597,40 +600,6 @@ public class SpattPrimitives
 
   public static final class Multiply extends Procedure
   {
-    public static Object multiply(Object operand1, Object operand2)
-    {
-      Class c1 = operand1.getClass();
-      Class c2 = operand2.getClass();
-      if (c1 == Integer.class)
-      {
-        if (c2 == Integer.class)
-        {
-          int i = (Integer) operand1;
-          int j = (Integer) operand2;
-          return i * j;
-        }
-      }
-      if (c1 == Double.class)
-      {
-        if (c2 == Double.class)
-        {
-          double i = (Double) operand1;
-          double j = (Double) operand2;
-          return i * j;
-        }
-      }
-      if (c1 == Long.class)
-      {
-        if (c2 == Long.class)
-        {
-          long i = (Long) operand1;
-          long j = (Long) operand2;
-          return i * j;
-        }
-      }
-      throw new IllegalArgumentException("(+ " + operand1 + " " + operand2 + ")");
-    }
-
     public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
     {
       return cont.call(operand);
@@ -638,25 +607,20 @@ public class SpattPrimitives
 
     public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
     {
-      return cont.call(multiply(operand1, operand2));
+      return cont.call(Primitives.multiply(operand1, operand2));
+    }
+  }
+
+  public static final class Divide extends Procedure
+  {
+    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+    {
+      return cont.call(operand);
     }
 
-    public Callable<Callable> apply3(Object operand1, Object operand2, Object operand3, LstEnv env, TCont cont)
+    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
     {
-      int i = (Integer) operand1;
-      int j = (Integer) operand2;
-      int k = (Integer) operand3;
-      return cont.call(i * j * k);
-    }
-
-    public Callable<Callable> applyN(Object[] operands, LstEnv env, TCont cont)
-    {
-      int r = (Integer) operands[0];
-      for (int i = 1; i < operands.length; i++)
-      {
-        r *= (Integer) operands[i];
-      }
-      return cont.call(r);
+      return cont.call(Primitives.divide(operand1, operand2));
     }
   }
 
@@ -884,6 +848,14 @@ public class SpattPrimitives
     public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
     {
       return cont.call(((Lst) operand1).listRef((Integer) operand2));
+    }
+  }
+
+  public static final class ListTail extends Procedure
+  {
+    public Callable<Callable> apply2(Object operand1, Object operand2, LstEnv env, TCont cont)
+    {
+      return cont.call(((Lst) operand1).listTail((Integer) operand2));
     }
   }
 
@@ -2121,6 +2093,14 @@ public class SpattPrimitives
     public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
     {
       return cont.call(((Lst) operand).cdddr());
+    }
+  }
+
+  public static final class Cddddr extends Procedure // UNTESTED
+  {
+    public Callable<Callable> apply1(Object operand, LstEnv env, TCont cont)
+    {
+      return cont.call(((Lst) operand).cddddr());
     }
   }
 

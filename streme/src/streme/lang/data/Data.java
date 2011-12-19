@@ -1,6 +1,8 @@
 package streme.lang.data;
 
 import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 
 public final class Data
@@ -34,13 +36,23 @@ public final class Data
       return (((Comparable<Object>)o1).compareTo(o2));
     }
   };
-  
+
   public static final String toString(Object object, String... meta)
+  {
+    return toString(object, 0, meta);
+  }
+
+  
+  public static final String toString(Object object, int depth, String... meta)
   {
 //    if (object instanceof IData)
 //    {
 //      return toString(((IData) object).toData(meta));
 //    }
+    if (depth > 3)
+    {
+      return "...";
+    }
     if (Boolean.TRUE.equals(object))
     {
       return "#t";
@@ -53,6 +65,15 @@ public final class Data
     {
       return "\"" + object + "\"";
     }
+    if (object instanceof Object[])
+    {
+      Object[] vector = (Object[]) object;
+      return "#(" + toStrings(vector, depth + 1, meta) + ")";
+    }
+    if (object instanceof Character)
+    {
+      return "#\\" + object;
+    }
     if (object == null)
     {
       return "<undefined>";
@@ -61,19 +82,15 @@ public final class Data
     {
       return "<unspecified>";
     }
-    if (object instanceof Object[])
-    {
-      Object[] vector = (Object[]) object;
-      return "#(" + toStrings(vector, meta) + ")";
-    }
-    if (object instanceof Character)
-    {
-      return "#\\" + object;
-    }
     return object.toString();
   }
 
   public static final String toStrings(Object[] exps, String... meta)
+  {
+    return toStrings(exps, 0, meta);
+  }
+
+  public static final String toStrings(Object[] exps, int depth, String... meta)
   {
     if (exps.length == 0)
     {
@@ -83,9 +100,9 @@ public final class Data
     int i;
     for (i = 0; i < exps.length - 1; i++)
     {
-      sb.append(toString(exps[i], meta)).append(" ");
+      sb.append(toString(exps[i], depth, meta)).append(" ");
     }
-    sb.append(toString(exps[i], meta));
+    sb.append(toString(exps[i], depth, meta));
     return sb.toString();
   }
   

@@ -728,9 +728,16 @@ public class QueryView extends ViewPart
 		}
 		else if (o instanceof Iterable)
 		{
-			for (Object oo : (Iterable) o)
+			try
 			{
-				markQueryResults(annotations, oo, root);
+				for (Object oo : (Iterable) o)
+				{
+					markQueryResults(annotations, oo, root);
+				}
+			}
+			catch (IllegalArgumentException iae) // probably 'not a proper list'
+			{
+				// ignore
 			}
 		}
 	}
@@ -843,9 +850,16 @@ public class QueryView extends ViewPart
 		}
 		else if (result instanceof Iterable)
 		{
-			for (Object o : (Iterable) result)
+			try
 			{
-				tagNodes(o, context);
+				for (Object o : (Iterable) result)
+				{
+					tagNodes(o, context);
+				}
+			}
+			catch (IllegalArgumentException iae) // probably 'not a proper list'
+			{
+				// ignore
 			}
 		}
 	}

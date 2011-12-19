@@ -232,7 +232,7 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
     {
       gc(bindingEnv, cont);
     }
-    if (steps == 87)
+    if (steps == 9)
     {
       System.out.println("debug");
     }
@@ -643,8 +643,8 @@ public class StatefulIpdAnalyzer implements AstAnalyzer<Void>
     // "(letrec ((fib (lambda (n) (if (< n 2) n (let ((a (fib (- n 1))) (b (fib (- n 2)))) (+ a b)))))) (fib 3))";
     // String source = "(let* ((z 0) (writez (lambda () (set! z 123))) (readz (lambda () z))) (cons (writez) (readz)))";
 //    String source = "(begin (define f (lambda (x) x)) (f 123))";
-//    String source = "(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))";
-    String source = "(begin 1 2 3)";
+   String source = "(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))";
+//    String source = "(((lambda (x) (lambda (y) (+ x y))) 1) 2)"; // does not work
     Parser2 parser = new Parser2();
     Object data = parser.parse(source);
     StremeDataCompiler compiler = new StremeDataCompiler();
