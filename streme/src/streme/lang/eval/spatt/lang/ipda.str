@@ -65,12 +65,6 @@
 (define (store-lookup-entry address store)
 	(assoc address store))
 
-(define (store-lookup address store)
-	(let ((entry (store-lookup-entry address store)))
-		(if entry
-			(cdr entry)
-			(error (String/format "no value at address %1s" (vector address))))))
-
 (define (store-update address value store)
 	(if (null? store)
 		(cons (cons address value) '())
@@ -378,14 +372,9 @@
 			(create-cont
 				benv
 				(lambda (stack time)
-					(let* ((operator-values (car stack))
-					       (cont (cadr stack))
-					       (stack2 (cddr stack))
-					       (marked-cont (cont-add-application application cont))
-					       (stack3 (cons operator-values (cons marked-cont stack2))))
-						(if (null? operands)
-						    (apply-proc application stack3 benv time)
-							(eval-node (car operands) (cons (operands-cont application (cdr operands) benv) stack3) benv time))))))) 	    
+					(if (null? operands)
+					    (apply-proc application stack benv time)
+						(eval-node (car operands) (cons (operands-cont application (cdr operands) benv) stack) benv time)))))) 	    
 			    
 	(define (eval-application node stack benv time)
 		(let ((operator (application-operator node)))
@@ -397,6 +386,9 @@
 	           (operator-values (car application-values))
 	           (operands-values (cdr application-values))
 	           (stack2 (list-tail stack application-length))
+	           (cont (car stack2))
+	           (marked-cont (cont-add-application application cont))
+	           (stack3 (cdr stack2))
 	           (time2 (time-tick (node-tag application) k time)))
 			(map (lambda (operator)
 					(create-task
@@ -406,15 +398,12 @@
 							(let* ((calling-context (create-calling-context operator operands-values time))
 								   (application-calling-contexts (lsetmap-get application calling-contexts)))
 								(if (lset-member? calling-context application-calling-contexts)
-									(let ((cont (car stack2))
-									      (stack3 (cdr stack2)))
-										calling-context
-										(cont-call cont (cons *any* stack3) time2))
+									(cont-call marked-cont (cons *any* stack3) time2)
 									(begin
 										(set! calling-contexts (lsetmap-put application calling-context calling-contexts))
 										(if (closure? operator)
-											(apply-closure operator operands-values stack2 benv time)
-											(apply-primitive operator operands-values stack2 benv time2))))))))
+											(apply-closure operator operands-values (cons marked-cont stack3) benv time2)
+											(apply-primitive operator operands-values (cons marked-cont stack3) benv time2))))))))
 						   operator-values)))
 										
 	(define (apply-primitive primitive operands-values stack benv time)
@@ -535,12 +524,14 @@
 ;(define ast (create-ast '(begin (define t (lambda (x) (t (+ x 1)))) (t 0))))
 ;(define ast (create-ast '(begin (define fib (lambda (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2)))))) (fib 3))))
 ;(define ast (create-ast '(begin (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define square (lambda (x) (* x x))) (appender (lister square) 42 43))))
-;(define ast (create-ast '(begin (define z '()) (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define conser (lambda (x) (set! z (cons x z)) z)) (appender (lister conser) 42 43))))
+(define ast (create-ast '(begin (define z '()) (define appender (lambda (h a b) (append (h a) (h b)))) (define lister (lambda (g) (lambda (x) (list (g x))))) (define conser (lambda (x) (set! z (cons x z)) z)) (appender (lister conser) 42 43))))
+;(define ast (create-ast '(begin (define sq (lambda (n) (* n n))) (sq 5))))
 
 
-;(define ipda (ipda-eval ast 4 ast))
-;(d 'result (ipda-result ipda))
-;(d 'reads (ipda-reads ipda))
-;(d 'writes (ipda-writes ipda))
+(define ipda (ipda-eval ast 4 ast))
+(d 'result (ipda-result ipda))
+(d 'reads (ipda-reads ipda))
+(d 'rl (length (ipda-reads ipda)))
+(d 'writes (ipda-writes ipda))
 
 	
